@@ -14,6 +14,9 @@
         [playerQueue.shuffle_enabled, 'primary', ''],
       ])
     "
+    :aria-label="shuffleButtonLabel"
+    :aria-pressed="playerQueue.shuffle_enabled ? 'true' : 'false'"
+    :title="shuffleButtonLabel"
     variant="button"
     @click="
       api.queueCommandShuffle(
@@ -37,6 +40,7 @@ import { isQueueDynamicPlaylist } from "@/plugins/api/helpers";
 import { IconArrowsRight } from "@tabler/icons-vue";
 import { Shuffle } from "lucide-vue-next";
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 
 // properties
 export interface Props {
@@ -50,6 +54,13 @@ const compProps = withDefaults(defineProps<Props>(), {
   icon: undefined,
   size: 20,
 });
+const { t } = useI18n();
+
+const shuffleButtonLabel = computed(() =>
+  compProps.playerQueue?.shuffle_enabled
+    ? t("shuffle_disable")
+    : t("shuffle_enable"),
+);
 
 const isLoading = computed(() => {
   return (

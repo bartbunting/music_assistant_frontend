@@ -4,6 +4,8 @@
     :ripple="false"
     icon
     :title="$t('players')"
+    aria-haspopup="menu"
+    :aria-expanded="store.showPlayersMenu ? 'true' : 'false'"
     @click="openPlayersMenu"
   >
     <v-icon

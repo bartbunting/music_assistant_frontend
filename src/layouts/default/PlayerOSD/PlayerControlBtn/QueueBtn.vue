@@ -6,6 +6,7 @@
     icon
     v-bind="$attrs"
     :title="$t('queue')"
+    :aria-expanded="store.showQueueItems ? 'true' : 'false'"
     :disabled="
       !store.activePlayerId ||
       (store.showFullscreenPlayer &&

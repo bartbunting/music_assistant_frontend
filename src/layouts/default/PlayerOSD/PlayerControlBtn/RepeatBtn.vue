@@ -16,6 +16,9 @@
         [playerQueue.repeat_mode == RepeatMode.ONE, 'primary'],
       ])
     "
+    :aria-label="repeatButtonLabel"
+    :aria-pressed="playerQueue.repeat_mode == RepeatMode.OFF ? 'false' : 'true'"
+    :title="repeatButtonLabel"
     variant="button"
     @click="
       api.queueCommandRepeat(
@@ -49,6 +52,7 @@ import { PlayerQueue, RepeatMode } from "@/plugins/api/interfaces";
 import { isQueueDynamicPlaylist } from "@/plugins/api/helpers";
 import { computed } from "vue";
 import { IconRepeat, IconRepeatOff, IconRepeatOnce } from "@tabler/icons-vue";
+import { useI18n } from "vue-i18n";
 
 // properties
 export interface Props {
@@ -61,6 +65,12 @@ const compProps = withDefaults(defineProps<Props>(), {
   isVisible: true,
   icon: undefined,
   size: 20,
+});
+const { t } = useI18n();
+
+const repeatButtonLabel = computed(() => {
+  const repeatMode = compProps.playerQueue?.repeat_mode ?? RepeatMode.OFF;
+  return `${t("select_repeat_mode")}: ${t(`repeat_mode.${repeatMode}`)}`;
 });
 
 const isLoading = computed(() => {

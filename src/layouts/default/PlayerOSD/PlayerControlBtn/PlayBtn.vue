@@ -5,6 +5,8 @@
     v-bind="{ ...icon, ...$attrs }"
     class="play-btn-icon"
     :disabled="!canPlayPause || isLoading"
+    :aria-label="playButtonLabel"
+    :title="playButtonLabel"
     variant="button"
     @click="api.playerCommandPlayPause(player.player_id)"
   >
@@ -33,6 +35,7 @@ import api from "@/plugins/api";
 import { PlaybackState, Player, PlayerQueue } from "@/plugins/api/interfaces";
 import { Pause, Play } from "lucide-vue-next";
 import { computed, toRef } from "vue";
+import { useI18n } from "vue-i18n";
 
 // properties
 export interface Props {
@@ -53,6 +56,7 @@ const compProps = withDefaults(defineProps<Props>(), {
   size: 24,
   playOffset: 1,
 });
+const { t } = useI18n();
 
 const { activeSource } = useActiveSource(toRef(compProps, "player"));
 
@@ -80,6 +84,10 @@ const canPlayPause = computed(() => {
 const isPlaying = computed(() => {
   return compProps.player?.playback_state == PlaybackState.PLAYING;
 });
+
+const playButtonLabel = computed(() =>
+  isPlaying.value ? t("pause") : t("play"),
+);
 
 const isLoading = computed(() => {
   if (!compProps.player) return false;

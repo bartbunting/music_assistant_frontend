@@ -14,14 +14,18 @@
     >
       <v-toolbar class="v-toolbar-default" color="transparent">
         <template #prepend>
-          <Button icon @click="store.showFullscreenPlayer = false">
+          <Button
+            icon
+            :title="$t('close')"
+            @click="store.showFullscreenPlayer = false"
+          >
             <v-icon icon="mdi-chevron-down" />
           </Button>
         </template>
         <template #append>
           <v-menu v-if="store.activePlayerQueue?.radio_source.length" scrim>
             <template #activator="{ props }">
-              <Button v-bind="props" icon>
+              <Button v-bind="props" icon :title="$t('queue_radio_enabled')">
                 <v-icon color="accent" icon="mdi-radio-tower" />
               </Button>
             </template>
@@ -50,7 +54,7 @@
             "
           />
 
-          <Button icon @click.stop="openQueueMenu">
+          <Button icon :title="$t('queue_options')" @click.stop="openQueueMenu">
             <v-icon icon="mdi-dots-vertical" />
           </Button>
         </template>
@@ -239,6 +243,7 @@
                 <ListItem
                   link
                   :show-menu-btn="true"
+                  :menu-button-label="`${$t('more_options')}: ${item.name}`"
                   :disabled="!item.available"
                   @click.stop="(e: Event) => openQueueItemMenu(e, item)"
                   @menu.stop="(e: Event) => openQueueItemMenu(e, item)"
@@ -412,7 +417,11 @@
           <Icon
             v-if="store.activePlayerQueue"
             :disabled="!store.curQueueItem?.media_item"
-            :title="$t('tooltip.favorite')"
+            :aria-label="fullscreenFavoriteButtonLabel"
+            :aria-pressed="
+              store.curQueueItem?.media_item?.favorite ? 'true' : 'false'
+            "
+            :title="fullscreenFavoriteButtonLabel"
             variant="button"
             class="media-controls-item"
             max-height="30px"
@@ -604,6 +613,12 @@ const playBtnStyle = computed(() => {
   if (!color) return {};
   return { "--play-icon-color": color };
 });
+
+const fullscreenFavoriteButtonLabel = computed(() =>
+  store.curQueueItem?.media_item?.favorite
+    ? $t("favorites_remove")
+    : $t("favorites_add"),
+);
 
 const playerMarqueeSync = new MarqueeTextSync();
 const hoveredQueueIndex = ref(-1);

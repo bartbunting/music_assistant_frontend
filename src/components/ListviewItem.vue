@@ -3,6 +3,7 @@
   <ListItem
     link
     :show-menu-btn="showMenu"
+    :menu-button-label="menuButtonLabel"
     :class="{ unavailable: !isAvailable, 'listitem-selecting': showCheckboxes }"
     @click.stop="onClick"
     @menu.stop="onMenu"
@@ -268,6 +269,9 @@ const displayName = computed(() => {
   return compProps.item.name;
 });
 const playButtonLabel = computed(() => `${t("play")} ${displayName.value}`);
+const menuButtonLabel = computed(
+  () => `${t("more_options")}: ${displayName.value}`,
+);
 
 const compProps = withDefaults(defineProps<Props>(), {
   showTrackNumber: true,

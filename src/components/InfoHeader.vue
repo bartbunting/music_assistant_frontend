@@ -301,21 +301,17 @@
 
             <div class="flex items-center gap-2">
               <!-- favorite (heart) icon -->
-              <IconHeartFilled
-                v-if="item.favorite"
-                :size="24"
-                class="cursor-pointer"
-                :title="$t('tooltip.favorite')"
+              <button
+                type="button"
+                class="favorite-icon-button"
+                :aria-label="favoriteButtonLabel"
+                :aria-pressed="item.favorite ? 'true' : 'false'"
+                :title="favoriteButtonLabel"
                 @click="api.toggleFavorite(item)"
-              />
-              <IconHeart
-                v-else
-                :stroke-width="2"
-                :size="24"
-                class="cursor-pointer"
-                :title="$t('tooltip.favorite')"
-                @click="api.toggleFavorite(item)"
-              />
+              >
+                <IconHeartFilled v-if="item.favorite" :size="24" />
+                <IconHeart v-else :stroke-width="2" :size="24" />
+              </button>
               <!-- provider icon -->
               <provider-icon :domain="item.provider" :size="25" />
               <!-- merge genre button (admin only) -->
@@ -642,6 +638,9 @@ const artistLogo = computed(() => {
 });
 
 const isAdmin = computed(() => authManager.isAdmin());
+const favoriteButtonLabel = computed(() =>
+  compProps.item?.favorite ? t("favorites_remove") : t("favorites_add"),
+);
 
 const mergeGenre = () => {
   if (!compProps.item) return;
@@ -681,6 +680,25 @@ const deleteGenre = () => {
 .background-image .v-img__img--cover {
   object-position: 50% 20%;
 }
+
+.favorite-icon-button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: currentColor;
+  cursor: pointer;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  padding: 0;
+  width: 32px;
+}
+
+.favorite-icon-button:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 2px;
+}
+
 .v-card--variant-elevated {
   box-shadow: none;
   border-width: 1px;

@@ -51,6 +51,17 @@ export interface ButtonProps {
   ariaLabelledby?: string;
   "aria-label"?: string;
   "aria-labelledby"?: string;
+  "aria-expanded"?: boolean | "true" | "false";
+  "aria-haspopup"?:
+    | boolean
+    | "true"
+    | "false"
+    | "menu"
+    | "listbox"
+    | "tree"
+    | "grid"
+    | "dialog";
+  "aria-pressed"?: boolean | "true" | "false" | "mixed";
 }
 
 export interface ButtonEmits {
