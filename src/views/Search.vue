@@ -13,30 +13,33 @@
         @blur="searchHasFocus = false"
       />
 
-      <v-chip-group
-        v-model="selectedSearchType"
-        style="margin-top: 10px; margin-left: 10px"
-        selected-class="text-primary"
-        mandatory
-      >
-        <v-chip
-          v-for="item in [
-            SEARCH_TYPE_ALL,
-            MediaType.TRACK,
-            MediaType.ARTIST,
-            MediaType.ALBUM,
-            MediaType.PLAYLIST,
-            MediaType.PODCAST,
-            MediaType.AUDIOBOOK,
-            MediaType.RADIO,
-            MediaType.GENRE,
-          ]"
+      <fieldset class="search-type-group">
+        <legend class="sr-only">{{ $t("search") }}</legend>
+        <label
+          v-for="item in SEARCH_TYPE_OPTIONS"
           :key="item"
-          :text="$t(item === SEARCH_TYPE_ALL ? 'searchtype_all' : item + 's')"
-          :value="item"
-          filter
-        />
-      </v-chip-group>
+          class="search-type-chip"
+          :class="{
+            'search-type-chip--selected': selectedSearchType === item,
+          }"
+        >
+          <input
+            v-model="selectedSearchType"
+            class="sr-only"
+            type="radio"
+            name="search-type"
+            :value="item"
+          />
+          <v-icon
+            v-if="selectedSearchType === item"
+            class="search-type-chip-icon"
+            icon="mdi-check"
+            size="16"
+            aria-hidden="true"
+          />
+          <span>{{ $t(searchTypeTranslationKey(item)) }}</span>
+        </label>
+      </fieldset>
 
       <v-progress-linear
         v-if="loading"
@@ -160,8 +163,21 @@ import { store } from "@/plugins/store";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 const SEARCH_TYPE_ALL = "all";
+type SearchType = typeof SEARCH_TYPE_ALL | MediaType;
 
-// computed to bridge between chip-group (needs a real value) and store (uses undefined for "all")
+const SEARCH_TYPE_OPTIONS: SearchType[] = [
+  SEARCH_TYPE_ALL,
+  MediaType.TRACK,
+  MediaType.ARTIST,
+  MediaType.ALBUM,
+  MediaType.PLAYLIST,
+  MediaType.PODCAST,
+  MediaType.AUDIOBOOK,
+  MediaType.RADIO,
+  MediaType.GENRE,
+];
+
+// Bridge the radio group value to the store, which uses undefined for "all".
 const selectedSearchType = computed({
   get: () => store.globalSearchType || SEARCH_TYPE_ALL,
   set: (val: string) => {
@@ -169,6 +185,10 @@ const selectedSearchType = computed({
       val === SEARCH_TYPE_ALL ? undefined : (val as MediaType);
   },
 });
+
+function searchTypeTranslationKey(item: SearchType) {
+  return item === SEARCH_TYPE_ALL ? "searchtype_all" : `${item}s`;
+}
 
 // local refs
 const searchHasFocus = ref(false);
@@ -303,3 +323,46 @@ const filteredItems = function (mediaType: MediaType) {
   return [];
 };
 </script>
+
+<style scoped>
+.search-type-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 0 10px;
+  padding: 0;
+  border: 0;
+}
+
+.search-type-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 999px;
+  background: rgb(var(--v-theme-surface));
+  color: rgb(var(--v-theme-on-surface));
+  cursor: pointer;
+  font-size: 0.875rem;
+  line-height: 1;
+  user-select: none;
+}
+
+.search-type-chip--selected {
+  border-color: rgba(var(--v-theme-primary), 0.45);
+  background: rgba(var(--v-theme-primary), 0.12);
+  color: rgb(var(--v-theme-primary));
+  font-weight: 500;
+}
+
+.search-type-chip:focus-within {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 2px;
+}
+
+.search-type-chip-icon {
+  margin-left: -2px;
+}
+</style>
