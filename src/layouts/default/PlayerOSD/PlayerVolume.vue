@@ -80,7 +80,9 @@
       <div class="volume-prepend" @touchstart.stop @touchend.stop>
         <button
           class="volume-icon-btn"
+          :aria-label="muteButtonLabel"
           :disabled="muteDisabled"
+          :title="muteButtonLabel"
           @click.stop="onMuteToggle"
         >
           <component :is="volumeIconComponent" :size="iconSize" />
@@ -115,7 +117,11 @@
 
 <script setup lang="ts">
 import { Slider } from "@/components/ui/slider";
-import { getVolumeIconComponent, truncateString } from "@/helpers/utils";
+import {
+  getPlayerName,
+  getVolumeIconComponent,
+  truncateString,
+} from "@/helpers/utils";
 import { cn } from "@/lib/utils";
 import { api } from "@/plugins/api";
 import {
@@ -188,7 +194,15 @@ const isDisabled = computed(() => {
 });
 
 const isMuted = computed(() => {
+  if (useGroupVolume.value) {
+    return props.player.group_volume_muted ?? false;
+  }
   return props.player.volume_muted ?? false;
+});
+
+const muteButtonLabel = computed(() => {
+  const action = isMuted.value ? "Unmute" : "Mute";
+  return `${action} ${getPlayerName(props.player, 27)}`;
 });
 
 const isSliderDisabled = computed(() => isDisabled.value || isMuted.value);
