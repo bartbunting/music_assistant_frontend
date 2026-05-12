@@ -10,73 +10,79 @@
     :scrim="!store.showPlayersMenu"
     style="z-index: 999999"
     z-index="999999"
-    @update:model-value="
-      (v) => {
-        store.dialogActive = v;
-      }
-    "
+    @update:model-value="onMenuModelUpdate"
   >
     <v-card min-width="300" max-height="450" style="overflow-y: auto">
-      <v-list density="compact" slim tile>
-        <!-- play menu header -->
-        <div v-if="showPlayMenuHeader" class="menurow">
-          <v-list-item
-            link
-            append-icon="mdi-chevron-right"
-            :title="$t('play_on')"
-            :subtitle="store.activePlayer?.name || $t('no_player')"
-            style="padding-left: 25px"
-            @click.stop="playMenuHeaderClicked"
-          >
-            <template #prepend>
-              <v-icon
-                size="40"
-                style="margin-left: -8px"
-                :icon="
-                  store.activePlayer ? store.activePlayer.icon : 'mdi-speaker'
-                "
-              />
-            </template>
-          </v-list-item>
-        </div>
-        <v-divider
-          v-if="showPlayMenuHeader"
-          style="margin-top: 5px; margin-bottom: 5px"
-        />
-        <div
-          v-for="menuItem of items.filter((x) => !x.hide)"
-          :key="menuItem.label"
-          class="menurow"
-          :class="{ 'menu-item-error': menuItem.color === 'error' }"
-        >
-          <v-list-item
-            variant="text"
-            :title="$t(menuItem.label, menuItem.labelArgs || [])"
-            :disabled="menuItem.disabled == true"
-            :prepend-icon="
-              typeof menuItem.icon === 'string' ? menuItem.icon : undefined
-            "
-            :color="menuItem.color"
-            border="bottom"
-            :append-icon="
-              menuItem.selected
-                ? 'mdi-check'
-                : menuItem.subItems?.length
-                  ? 'mdi-chevron-right'
-                  : undefined
-            "
-            style="padding-left: 25px"
-            @click.stop="(e) => menuItemClicked(e, menuItem)"
-          >
-            <template
-              v-if="menuItem.icon && typeof menuItem.icon !== 'string'"
-              #prepend
+      <div
+        ref="menuContentRef"
+        role="menu"
+        tabindex="-1"
+        :aria-label="$t('more_options')"
+        @keydown.esc.stop.prevent="closeMenus"
+      >
+        <v-list density="compact" slim tile>
+          <!-- play menu header -->
+          <div v-if="showPlayMenuHeader" class="menurow">
+            <v-list-item
+              link
+              role="menuitem"
+              append-icon="mdi-chevron-right"
+              :title="$t('play_on')"
+              :subtitle="store.activePlayer?.name || $t('no_player')"
+              style="padding-left: 25px"
+              @click.stop="playMenuHeaderClicked"
             >
-              <component :is="menuItem.icon" class="w-5 h-5" />
-            </template>
-          </v-list-item>
-        </div>
-      </v-list>
+              <template #prepend>
+                <v-icon
+                  size="40"
+                  style="margin-left: -8px"
+                  :icon="
+                    store.activePlayer ? store.activePlayer.icon : 'mdi-speaker'
+                  "
+                />
+              </template>
+            </v-list-item>
+          </div>
+          <v-divider
+            v-if="showPlayMenuHeader"
+            style="margin-top: 5px; margin-bottom: 5px"
+          />
+          <div
+            v-for="menuItem of items.filter((x) => !x.hide)"
+            :key="menuItem.label"
+            class="menurow"
+            :class="{ 'menu-item-error': menuItem.color === 'error' }"
+          >
+            <v-list-item
+              variant="text"
+              role="menuitem"
+              :title="$t(menuItem.label, menuItem.labelArgs || [])"
+              :disabled="menuItem.disabled == true"
+              :prepend-icon="
+                typeof menuItem.icon === 'string' ? menuItem.icon : undefined
+              "
+              :color="menuItem.color"
+              border="bottom"
+              :append-icon="
+                menuItem.selected
+                  ? 'mdi-check'
+                  : menuItem.subItems?.length
+                    ? 'mdi-chevron-right'
+                    : undefined
+              "
+              style="padding-left: 25px"
+              @click.stop="(e) => menuItemClicked(e, menuItem)"
+            >
+              <template
+                v-if="menuItem.icon && typeof menuItem.icon !== 'string'"
+                #prepend
+              >
+                <component :is="menuItem.icon" class="w-5 h-5" />
+              </template>
+            </v-list-item>
+          </div>
+        </v-list>
+      </div>
     </v-card>
   </v-menu>
   <!-- submenu -->
@@ -87,35 +93,44 @@
     z-index="999999"
   >
     <v-card min-width="260">
-      <v-list density="compact" slim tile>
-        <div
-          v-for="subMenuItem of subMenuItems.filter((x) => !x.hide)"
-          :key="subMenuItem.label"
-          class="menurow"
-          :class="{ 'menu-item-error': subMenuItem.color === 'error' }"
-        >
-          <v-list-item
-            variant="text"
-            :title="$t(subMenuItem.label, subMenuItem.labelArgs || [])"
-            :disabled="subMenuItem.disabled == true"
-            :prepend-icon="
-              typeof subMenuItem.icon === 'string'
-                ? subMenuItem.icon
-                : undefined
-            "
-            :color="subMenuItem.color"
-            :append-icon="subMenuItem.selected ? 'mdi-check' : undefined"
-            @click.stop="(e) => menuItemClicked(e, subMenuItem)"
+      <div
+        ref="subMenuContentRef"
+        role="menu"
+        tabindex="-1"
+        :aria-label="$t('more_options')"
+        @keydown.esc.stop.prevent="closeSubmenu"
+      >
+        <v-list density="compact" slim tile>
+          <div
+            v-for="subMenuItem of subMenuItems.filter((x) => !x.hide)"
+            :key="subMenuItem.label"
+            class="menurow"
+            :class="{ 'menu-item-error': subMenuItem.color === 'error' }"
           >
-            <template
-              v-if="subMenuItem.icon && typeof subMenuItem.icon !== 'string'"
-              #prepend
+            <v-list-item
+              variant="text"
+              role="menuitem"
+              :title="$t(subMenuItem.label, subMenuItem.labelArgs || [])"
+              :disabled="subMenuItem.disabled == true"
+              :prepend-icon="
+                typeof subMenuItem.icon === 'string'
+                  ? subMenuItem.icon
+                  : undefined
+              "
+              :color="subMenuItem.color"
+              :append-icon="subMenuItem.selected ? 'mdi-check' : undefined"
+              @click.stop="(e) => menuItemClicked(e, subMenuItem)"
             >
-              <component :is="subMenuItem.icon" class="w-5 h-5" />
-            </template>
-          </v-list-item>
-        </div>
-      </v-list>
+              <template
+                v-if="subMenuItem.icon && typeof subMenuItem.icon !== 'string'"
+                #prepend
+              >
+                <component :is="subMenuItem.icon" class="w-5 h-5" />
+              </template>
+            </v-list-item>
+          </div>
+        </v-list>
+      </div>
     </v-card>
   </v-menu>
 </template>
@@ -124,7 +139,7 @@
 import api from "@/plugins/api";
 import { ContextMenuDialogEvent, eventbus } from "@/plugins/eventbus";
 import { store } from "@/plugins/store";
-import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 const show = ref<boolean>(false);
 const items = ref<ContextMenuItem[]>([]);
@@ -136,8 +151,78 @@ const showSubmenu = ref<boolean>(false);
 const subMenuItems = ref<ContextMenuItem[]>([]);
 const subMenuPosX = ref(0);
 const subMenuPosY = ref(0);
+const menuContentRef = ref<HTMLElement | null>(null);
+const subMenuContentRef = ref<HTMLElement | null>(null);
+const menuOpener = ref<HTMLElement | null>(null);
+
+const focusableMenuItemSelector = [
+  "button:not([disabled])",
+  "[href]",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[tabindex]:not([tabindex='-1'])",
+].join(",");
+
+function focusMenuContent(menuContent: HTMLElement | null) {
+  if (!menuContent) return;
+  const focusTarget =
+    menuContent.querySelector<HTMLElement>(focusableMenuItemSelector) ||
+    menuContent;
+  focusTarget.focus({ preventScroll: true });
+}
+
+function rememberMenuOpener() {
+  const activeElement = document.activeElement;
+  if (activeElement instanceof HTMLElement) {
+    menuOpener.value = activeElement;
+  }
+}
+
+function restoreMenuOpener() {
+  if (!show.value && !showSubmenu.value && menuOpener.value?.isConnected) {
+    menuOpener.value.focus({ preventScroll: true });
+    menuOpener.value = null;
+  }
+}
+
+function closeSubmenu() {
+  showSubmenu.value = false;
+  nextTick(() => focusMenuContent(menuContentRef.value));
+}
+
+function closeMenus() {
+  showSubmenu.value = false;
+  show.value = false;
+  store.dialogActive = false;
+}
+
+function onMenuModelUpdate(open: boolean) {
+  store.dialogActive = open;
+  if (!open) {
+    showSubmenu.value = false;
+  }
+}
+
+watch(show, (open) => {
+  if (open) {
+    nextTick(() => focusMenuContent(menuContentRef.value));
+  } else {
+    restoreMenuOpener();
+  }
+});
+
+watch(showSubmenu, (open) => {
+  if (open) {
+    nextTick(() => focusMenuContent(subMenuContentRef.value));
+  } else {
+    restoreMenuOpener();
+  }
+});
+
 onMounted(() => {
   eventbus.on("contextmenu", async (evt: ContextMenuDialogEvent) => {
+    rememberMenuOpener();
     items.value = evt.items;
     posX.value = evt.posX || 0;
     posY.value = evt.posY || 0;
@@ -158,9 +243,9 @@ const menuItemClicked = function (
   if (menuItem.subItems) {
     evt.preventDefault();
     subMenuItems.value = menuItem.subItems;
-    ((subMenuPosX.value = (evt as PointerEvent).clientX),
-      (subMenuPosY.value = (evt as PointerEvent).clientY),
-      (showSubmenu.value = true));
+    subMenuPosX.value = (evt as PointerEvent).clientX;
+    subMenuPosY.value = (evt as PointerEvent).clientY;
+    showSubmenu.value = true;
     return;
   } else if (menuItem.action) {
     menuItem.action();
@@ -206,9 +291,9 @@ const playMenuHeaderClicked = function (evt: MouseEvent | KeyboardEvent) {
   }
 
   subMenuItems.value = _subItems;
-  ((subMenuPosX.value = (evt as PointerEvent).clientX),
-    (subMenuPosY.value = (evt as PointerEvent).clientY),
-    (showSubmenu.value = true));
+  subMenuPosX.value = (evt as PointerEvent).clientX;
+  subMenuPosY.value = (evt as PointerEvent).clientY;
+  showSubmenu.value = true;
 };
 </script>
 
