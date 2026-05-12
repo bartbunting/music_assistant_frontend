@@ -52,6 +52,8 @@
             variant="ghost"
             size="icon"
             class="help-btn"
+            :aria-label="getHelpButtonLabel(conf_entry)"
+            :title="getHelpButtonLabel(conf_entry)"
             @click="
               $t(
                 `settings.${conf_entry?.key}.description`,
@@ -125,6 +127,8 @@
             variant="ghost"
             size="icon"
             class="help-btn"
+            :aria-label="getHelpButtonLabel(conf_entry)"
+            :title="getHelpButtonLabel(conf_entry)"
             @click="
               $t(
                 `settings.${conf_entry?.key}.description`,
@@ -196,6 +200,8 @@
               variant="ghost"
               size="icon"
               class="help-btn"
+              :aria-label="getHelpButtonLabel(conf_entry)"
+              :title="getHelpButtonLabel(conf_entry)"
               @click="
                 $t(
                   `settings.${conf_entry?.key}.description`,
@@ -314,6 +320,8 @@
                   variant="ghost"
                   size="icon"
                   class="help-btn"
+                  :aria-label="getHelpButtonLabel(conf_entry)"
+                  :title="getHelpButtonLabel(conf_entry)"
                   @click="
                     $t(
                       `settings.${conf_entry?.key}.description`,
@@ -384,6 +392,8 @@
             variant="ghost"
             size="icon"
             class="help-btn"
+            :aria-label="getHelpButtonLabel(conf_entry)"
+            :title="getHelpButtonLabel(conf_entry)"
             @click="
               $t(
                 `settings.${conf_entry?.key}.description`,
@@ -958,6 +968,25 @@ const hasDescriptionOrHelpLink = function (conf_entry: ConfigEntryUI) {
       " "
     )?.length > 1
   );
+};
+
+const getConfigEntryLabel = function (conf_entry: ConfigEntryUI) {
+  const key = conf_entry.translation_key || conf_entry.key;
+  const translationKey = `settings.${key}.label`;
+  const fallback = conf_entry.label;
+
+  if (
+    conf_entry.translation_params &&
+    conf_entry.translation_params.length > 0
+  ) {
+    return $t(translationKey, conf_entry.translation_params) || fallback;
+  }
+
+  return $t(translationKey, fallback);
+};
+
+const getHelpButtonLabel = function (conf_entry: ConfigEntryUI) {
+  return `${$t("details")}: ${getConfigEntryLabel(conf_entry)}`;
 };
 </script>
 
