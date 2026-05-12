@@ -4,22 +4,42 @@
     <div
       v-if="store.showPlayersMenu"
       class="player-panel-scrim"
-      @click="store.showPlayersMenu = false"
+      @click="closePlayersMenu"
     ></div>
   </Transition>
 
   <!-- Panel: fixed position, slides in via transform -->
   <div
+    ref="playerPanel"
     class="player-panel player-panel--overlay"
     :class="{
       'player-panel--open': store.showPlayersMenu,
     }"
+    role="dialog"
+    aria-modal="true"
+    :aria-hidden="store.showPlayersMenu ? undefined : 'true'"
+    :inert="!store.showPlayersMenu"
+    :aria-labelledby="playerPanelTitleId"
+    tabindex="-1"
+    @keydown="onPlayerPanelKeydown"
+    @keydown.esc.stop.prevent="closePlayersMenu"
   >
     <div class="player-panel-inner">
       <!-- header -->
       <div class="player-header">
         <Speaker class="player-header-icon" />
-        <span class="player-header-title">{{ $t("players") }}</span>
+        <span :id="playerPanelTitleId" class="player-header-title">
+          {{ $t("players") }}
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          class="player-header-close"
+          :aria-label="$t('close')"
+          @click="closePlayersMenu"
+        >
+          <X class="size-4" />
+        </Button>
       </div>
 
       <!-- scrollable content -->
@@ -106,6 +126,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group";
+import { Button } from "@/components/ui/button";
 import { useUserPreferences } from "@/composables/userPreferences";
 import { playerVisible } from "@/helpers/utils";
 import { api } from "@/plugins/api";
@@ -113,8 +134,15 @@ import { Player, PlayerFeature } from "@/plugins/api/interfaces";
 
 import { store } from "@/plugins/store";
 import { webPlayer } from "@/plugins/web_player";
-import { Search, Speaker } from "lucide-vue-next";
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { Search, Speaker, X } from "lucide-vue-next";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 
 const showSubPlayers = ref(false);
 const recentlySelectedPlayerIds = ref<string[]>([]);
@@ -123,9 +151,20 @@ const playerSearchQuery = ref("");
 const playerSearchInput = ref<InstanceType<typeof InputGroupInput> | null>(
   null,
 );
+const playerPanel = ref<HTMLElement | null>(null);
+const playerMenuOpener = ref<HTMLElement | null>(null);
 const { getPreference, setPreference } = useUserPreferences();
 
 const MAX_RECENT_PLAYERS = 3;
+const playerPanelTitleId = "player-panel-title";
+const focusablePanelControlSelector = [
+  "button:not([disabled])",
+  "[href]",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[tabindex]:not([tabindex='-1'])",
+].join(",");
 
 // Load all players expanded state from user preferences
 const allPlayersExpandedPref = getPreference<boolean>("allPlayersExpanded");
@@ -189,24 +228,29 @@ const preferredPlayers = computed(() => {
 watch(
   () => store.showPlayersMenu,
   (newVal) => {
-    if (!newVal) {
-      // Save preferences and reset state when menu closes
-      playerSearchQuery.value = "";
-      if (store.activePlayerId) {
-        setPreference("activePlayerId", store.activePlayerId);
-        localStorage.setItem("activePlayerId", store.activePlayerId);
-        // Update recently selected players list
-        const recent = recentlySelectedPlayerIds.value.filter(
-          (id) => id !== store.activePlayerId,
-        );
-        recent.unshift(store.activePlayerId);
-        recentlySelectedPlayerIds.value = recent.slice(0, MAX_RECENT_PLAYERS);
-      }
-      setPreference(
-        "recentlySelectedPlayerIds",
-        recentlySelectedPlayerIds.value,
-      );
+    if (newVal) {
+      rememberPlayerMenuOpener();
+      store.dialogActive = true;
+      nextTick(() => focusPlayerPanel());
+      return;
     }
+
+    store.dialogActive = false;
+    nextTick(() => restorePlayerMenuOpener());
+
+    // Save preferences and reset state when menu closes
+    playerSearchQuery.value = "";
+    if (store.activePlayerId) {
+      setPreference("activePlayerId", store.activePlayerId);
+      localStorage.setItem("activePlayerId", store.activePlayerId);
+      // Update recently selected players list
+      const recent = recentlySelectedPlayerIds.value.filter(
+        (id) => id !== store.activePlayerId,
+      );
+      recent.unshift(store.activePlayerId);
+      recentlySelectedPlayerIds.value = recent.slice(0, MAX_RECENT_PLAYERS);
+    }
+    setPreference("recentlySelectedPlayerIds", recentlySelectedPlayerIds.value);
   },
 );
 watch(
@@ -242,6 +286,74 @@ function playerClicked(player: Player, close: boolean = false) {
   });
 }
 
+function closePlayersMenu() {
+  store.showPlayersMenu = false;
+}
+
+function rememberPlayerMenuOpener() {
+  const activeElement = document.activeElement;
+  if (
+    activeElement instanceof HTMLElement &&
+    !playerPanel.value?.contains(activeElement)
+  ) {
+    playerMenuOpener.value = activeElement;
+  }
+}
+
+function restorePlayerMenuOpener() {
+  if (playerMenuOpener.value?.isConnected) {
+    playerMenuOpener.value.focus({ preventScroll: true });
+  }
+  playerMenuOpener.value = null;
+}
+
+function focusPlayerPanel() {
+  playerPanel.value?.focus({ preventScroll: true });
+}
+
+function getFocusablePanelControls() {
+  if (!playerPanel.value) return [];
+  return Array.from(
+    playerPanel.value.querySelectorAll<HTMLElement>(
+      focusablePanelControlSelector,
+    ),
+  ).filter(
+    (element) =>
+      element.tabIndex >= 0 && element.getAttribute("aria-disabled") !== "true",
+  );
+}
+
+function onPlayerPanelKeydown(event: KeyboardEvent) {
+  if (event.key !== "Tab") return;
+
+  const focusableElements = getFocusablePanelControls();
+  if (!focusableElements.length || !playerPanel.value) {
+    event.preventDefault();
+    focusPlayerPanel();
+    return;
+  }
+
+  const firstElement = focusableElements[0];
+  const lastElement = focusableElements[focusableElements.length - 1];
+  const activeElement = document.activeElement;
+
+  if (
+    event.shiftKey &&
+    (activeElement === firstElement ||
+      activeElement === playerPanel.value ||
+      !playerPanel.value.contains(activeElement))
+  ) {
+    event.preventDefault();
+    lastElement.focus();
+    return;
+  }
+
+  if (!event.shiftKey && activeElement === lastElement) {
+    event.preventDefault();
+    firstElement.focus();
+  }
+}
+
 function toggleGroupExpand(player: Player) {
   if (store.activePlayerId !== player.player_id) {
     store.activePlayerId = player.player_id;
@@ -262,6 +374,12 @@ function toggleGroupExpand(player: Player) {
 
 onMounted(() => {
   checkDefaultPlayer();
+});
+
+onBeforeUnmount(() => {
+  if (store.showPlayersMenu) {
+    store.dialogActive = false;
+  }
 });
 
 const checkDefaultPlayer = function () {
@@ -399,6 +517,7 @@ const selectDefaultPlayer = function () {
   padding-top: 16px;
   padding-bottom: 8px;
   padding-left: 16px;
+  padding-right: 8px;
   flex-shrink: 0;
 }
 
@@ -414,6 +533,13 @@ const selectDefaultPlayer = function () {
   font-weight: bold;
   white-space: nowrap;
   overflow: hidden;
+  flex: 1;
+  min-width: 0;
+}
+
+.player-header-close {
+  margin-left: auto;
+  color: rgb(var(--v-theme-on-surface));
 }
 
 /* Scrollable content */
