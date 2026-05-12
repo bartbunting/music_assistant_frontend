@@ -4,7 +4,8 @@
     :ripple="false"
     icon
     :title="$t('players')"
-    aria-haspopup="menu"
+    aria-controls="player-panel"
+    aria-haspopup="dialog"
     :aria-expanded="store.showPlayersMenu ? 'true' : 'false'"
     @click="openPlayersMenu"
   >

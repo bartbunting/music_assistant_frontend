@@ -10,6 +10,7 @@
 
   <!-- Panel: fixed position, slides in via transform -->
   <div
+    id="player-panel"
     ref="playerPanel"
     class="player-panel player-panel--overlay"
     :class="{

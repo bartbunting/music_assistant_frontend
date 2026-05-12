@@ -515,6 +515,9 @@
           <v-btn
             class="responsive-icon-holder-btn"
             variant="outlined"
+            aria-controls="player-panel"
+            aria-haspopup="dialog"
+            :aria-expanded="store.showPlayersMenu ? 'true' : 'false'"
             @click="
               () => {
                 store.showPlayersMenu = true;

@@ -57,6 +57,9 @@
     <v-btn
       id="active-player-popover"
       :aria-label="$t('players')"
+      aria-controls="player-panel"
+      aria-haspopup="dialog"
+      :aria-expanded="store.showPlayersMenu ? 'true' : 'false'"
       tabindex="0"
       variant="text"
       @click="handlePlayersClick"
