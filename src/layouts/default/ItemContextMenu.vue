@@ -7,7 +7,7 @@
   <v-menu
     v-model="show"
     :target="[posX, posY]"
-    :scrim="!store.showPlayersMenu"
+    :scrim="TRANSPARENT_SCRIM"
     style="z-index: 999999"
     z-index="999999"
     @update:model-value="onMenuModelUpdate"
@@ -89,6 +89,7 @@
   <v-menu
     v-model="showSubmenu"
     :target="[subMenuPosX, subMenuPosY]"
+    :scrim="TRANSPARENT_SCRIM"
     style="z-index: 999999"
     z-index="999999"
   >
@@ -98,7 +99,7 @@
         role="menu"
         tabindex="-1"
         :aria-label="$t('more_options')"
-        @keydown.esc.stop.prevent="closeSubmenu"
+        @keydown.esc.stop.prevent="closeMenus"
       >
         <v-list density="compact" slim tile>
           <div
@@ -154,6 +155,7 @@ const subMenuPosY = ref(0);
 const menuContentRef = ref<HTMLElement | null>(null);
 const subMenuContentRef = ref<HTMLElement | null>(null);
 const menuOpener = ref<HTMLElement | null>(null);
+const TRANSPARENT_SCRIM = "#00000000";
 
 const focusableMenuItemSelector = [
   "button:not([disabled])",
