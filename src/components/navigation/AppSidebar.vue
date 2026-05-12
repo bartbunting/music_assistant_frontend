@@ -9,14 +9,16 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { eventbus } from "@/plugins/eventbus";
-import { computed, onMounted, onUnmounted } from "vue";
+import { eventbus, type MobileSidebarOpenEvent } from "@/plugins/eventbus";
+import { store } from "@/plugins/store";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import NavMobile from "./NavMobile.vue";
 import { getMenuItems } from "./utils/getMenuItems";
 
 const router = useRouter();
+const route = useRoute();
 const { t } = useI18n();
 
 const navItems = computed(() => {
@@ -30,14 +32,41 @@ const navItems = computed(() => {
     }));
 });
 
-const { toggleSidebar, state, isMobile } = useSidebar();
+const { toggleSidebar, state, isMobile, openMobile } = useSidebar();
 const collapsed = computed(() => state.value === "collapsed");
+const restorePlayersMenuAfterClose = ref(false);
+const restorePlayersMenuRoute = ref<string | null>(null);
 
-const handleOpenSidebar = () => {
+const handleOpenSidebar = (event: MobileSidebarOpenEvent | void) => {
   if (isMobile.value) {
+    if (!openMobile.value) {
+      restorePlayersMenuAfterClose.value =
+        event?.restorePlayersMenuOnClose === true;
+      restorePlayersMenuRoute.value = route.fullPath;
+    }
     toggleSidebar();
   }
 };
+
+const handleSidebarNavigation = () => {
+  restorePlayersMenuAfterClose.value = false;
+  restorePlayersMenuRoute.value = null;
+};
+
+watch(openMobile, (open) => {
+  if (open || !restorePlayersMenuAfterClose.value) return;
+
+  const shouldRestorePlayersMenu =
+    restorePlayersMenuRoute.value === route.fullPath;
+  restorePlayersMenuAfterClose.value = false;
+  restorePlayersMenuRoute.value = null;
+
+  if (shouldRestorePlayersMenu) {
+    nextTick(() => {
+      store.showPlayersMenu = true;
+    });
+  }
+});
 
 onMounted(() => {
   eventbus.on("mobile-sidebar-open", handleOpenSidebar);
@@ -67,7 +96,7 @@ onUnmounted(() => {
       </SidebarMenu>
     </SidebarHeader>
     <SidebarContent>
-      <NavMain :items="navItems" />
+      <NavMain :items="navItems" @navigate="handleSidebarNavigation" />
     </SidebarContent>
     <SidebarFooter>
       <NavMobile v-if="isMobile" />

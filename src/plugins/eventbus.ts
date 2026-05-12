@@ -46,6 +46,10 @@ export type ImportPlaylistEvent = {
   playlistName: string;
 };
 
+export type MobileSidebarOpenEvent = {
+  restorePlayersMenuOnClose?: boolean;
+};
+
 export type Events = {
   contextmenu: ContextMenuDialogEvent;
   playlistdialog: PlaylistDialogEvent;
@@ -58,7 +62,7 @@ export type Events = {
   clearSelection: void;
   genreExcluded: void;
   "homescreen-edit-toggle": void;
-  "mobile-sidebar-open": void;
+  "mobile-sidebar-open": MobileSidebarOpenEvent | void;
 };
 
 export const eventbus: Emitter<Events> = mitt<Events>();

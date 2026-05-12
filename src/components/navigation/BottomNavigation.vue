@@ -83,8 +83,9 @@ const route = useRoute();
 const isActive = (name: string) => route.name === name;
 
 const handleMenuClick = () => {
+  const restorePlayersMenuOnClose = store.showPlayersMenu;
   closePlayersMenu();
-  eventbus.emit("mobile-sidebar-open");
+  eventbus.emit("mobile-sidebar-open", { restorePlayersMenuOnClose });
 };
 
 const handleDiscoverClick = () => {

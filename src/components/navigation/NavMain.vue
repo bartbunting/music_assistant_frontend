@@ -25,6 +25,10 @@ const props = defineProps<{
   items: NavItem[];
 }>();
 
+const emit = defineEmits<{
+  navigate: [];
+}>();
+
 const route = useRoute();
 const router = useRouter();
 const { isMobile, setOpenMobile } = useSidebar();
@@ -40,6 +44,7 @@ const handleClick = (item: NavItem, event: Event) => {
     window.open(fullUrl, "_blank");
   }
   if (isMobile.value) {
+    emit("navigate");
     setOpenMobile(false);
   }
 };
