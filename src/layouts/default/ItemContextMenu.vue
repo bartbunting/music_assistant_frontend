@@ -167,9 +167,48 @@ const focusableMenuItemSelector = [
 function focusMenuContent(menuContent: HTMLElement | null) {
   if (!menuContent) return;
   const focusTarget =
+    menuContent.querySelector<HTMLElement>(
+      "[role='menuitem']:not([aria-disabled='true'])",
+    ) ||
     menuContent.querySelector<HTMLElement>(focusableMenuItemSelector) ||
     menuContent;
   focusTarget.focus({ preventScroll: true });
+}
+
+function queueMenuFocus(
+  getMenuContent: () => HTMLElement | null,
+  attempts = 5,
+) {
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      const menuContent = getMenuContent();
+      if (!menuContent) {
+        if (attempts > 0) {
+          window.setTimeout(
+            () => queueMenuFocus(getMenuContent, attempts - 1),
+            50,
+          );
+        }
+        return;
+      }
+
+      if (!menuContent.contains(document.activeElement)) {
+        focusMenuContent(menuContent);
+      }
+
+      if (attempts > 0) {
+        window.setTimeout(() => {
+          const currentMenuContent = getMenuContent();
+          if (
+            currentMenuContent &&
+            !currentMenuContent.contains(document.activeElement)
+          ) {
+            queueMenuFocus(getMenuContent, attempts - 1);
+          }
+        }, 50);
+      }
+    });
+  });
 }
 
 function rememberMenuOpener() {
@@ -188,7 +227,7 @@ function restoreMenuOpener() {
 
 function closeSubmenu() {
   showSubmenu.value = false;
-  nextTick(() => focusMenuContent(menuContentRef.value));
+  queueMenuFocus(() => menuContentRef.value);
 }
 
 function closeMenus() {
@@ -206,7 +245,7 @@ function onMenuModelUpdate(open: boolean) {
 
 watch(show, (open) => {
   if (open) {
-    nextTick(() => focusMenuContent(menuContentRef.value));
+    queueMenuFocus(() => (show.value ? menuContentRef.value : null));
   } else {
     restoreMenuOpener();
   }
@@ -214,7 +253,7 @@ watch(show, (open) => {
 
 watch(showSubmenu, (open) => {
   if (open) {
-    nextTick(() => focusMenuContent(subMenuContentRef.value));
+    queueMenuFocus(() => (showSubmenu.value ? subMenuContentRef.value : null));
   } else {
     restoreMenuOpener();
   }
