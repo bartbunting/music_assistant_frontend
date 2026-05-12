@@ -1494,8 +1494,11 @@
             "confirm_enable_guest_access": "Are you sure you want to enable guest access? This allows anyone with the link or QR code to join the party, browse music, and add songs to the queue.",
             "disable_guest_access": "Disable Guest Access",
             "enable_guest_access": "Enable Guest Access",
+            "enter_fullscreen": "Enter fullscreen",
+            "exit_fullscreen": "Exit fullscreen",
             "guest_access_enabled": "Guest Access Enabled",
             "guest_access_toggle_failed": "Failed to toggle guest access",
+            "open_settings": "Open party settings",
             "powered_by": "Powered by"
         }
     },
