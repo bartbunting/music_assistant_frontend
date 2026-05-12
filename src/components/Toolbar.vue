@@ -5,6 +5,8 @@
         :icon="typeof icon === 'string' ? icon : undefined"
         size="small"
         :disabled="iconAction == null"
+        :aria-label="toolbarIconLabel"
+        :aria-hidden="toolbarIconLabel ? undefined : true"
         style="opacity: 0.8"
         @click="iconAction?.()"
       >
@@ -135,9 +137,11 @@ import { store } from "@/plugins/store";
 import { getBreakpointValue } from "../plugins/breakpoint";
 
 import type { Component } from "vue";
-import { ref } from "vue";
+import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 
 const overflowMenuOpen = ref(false);
+const { t } = useI18n();
 
 const onMenuItemClick = (
   event: MouseEvent | KeyboardEvent,
@@ -178,8 +182,9 @@ interface Props {
   enforceOverflowMenu?: boolean;
   isDiscoverPage?: boolean;
   iconAction?: () => void;
+  iconLabel?: string;
 }
-withDefaults(defineProps<Props>(), {
+const toolbarProps = withDefaults(defineProps<Props>(), {
   color: "transparent",
   icon: undefined,
   title: undefined,
@@ -187,6 +192,15 @@ withDefaults(defineProps<Props>(), {
   menuItems: undefined,
   enforceOverflowMenu: false,
   iconAction: undefined,
+  iconLabel: undefined,
+});
+
+const toolbarIconLabel = computed(() => {
+  if (toolbarProps.iconLabel) return toolbarProps.iconLabel;
+  if (toolbarProps.title) return toolbarProps.title;
+  if (toolbarProps.isDiscoverPage) return t("discover");
+  if (toolbarProps.iconAction) return t("back");
+  return undefined;
 });
 
 // emitters
