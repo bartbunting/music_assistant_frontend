@@ -803,6 +803,8 @@
         "select_items": "Select multiple items",
         "sort_options": "Sort options",
         "toggle_view_mode": "Toggle view mode list\/thumbs",
+        "view_mode_current": "Current view: {0}. Change view mode",
+        "view_mode_switch": "Current view: {0}. Switch to {1}",
         "filter_favorites": "Only show favorites",
         "favorite": "Mark\/unmark as a favorite",
         "open_provider_link": "Open this item on the provider's website",
@@ -855,6 +857,7 @@
     "create_playlist_on": "Create new playlist on {0}",
     "view": {
         "list": "List view",
+        "card": "Card view",
         "panel": "Thumbs view",
         "panel_compact": "Compact thumbs view",
         "discovery": "Discovery"

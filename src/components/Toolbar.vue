@@ -38,6 +38,8 @@
         variant="text"
         style="width: 40px"
         :title="$t(menuItem.label, menuItem.labelArgs || [])"
+        :aria-label="$t(menuItem.label, menuItem.labelArgs || [])"
+        :aria-haspopup="menuItem.subItems?.length ? 'menu' : undefined"
         :disabled="menuItem.disabled == true"
         @click="(e: MouseEvent) => onMenuItemClick(e, menuItem)"
       >
