@@ -190,6 +190,7 @@
         icon
         variant="text"
         size="small"
+        :aria-label="playButtonLabel"
         :disabled="disablePlayButton"
         @click.stop="onPlayClick"
       >
@@ -266,6 +267,7 @@ const displayName = computed(() => {
   }
   return compProps.item.name;
 });
+const playButtonLabel = computed(() => `${t("play")} ${displayName.value}`);
 
 const compProps = withDefaults(defineProps<Props>(), {
   showTrackNumber: true,

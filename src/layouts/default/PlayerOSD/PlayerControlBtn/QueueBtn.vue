@@ -5,6 +5,7 @@
     :ripple="false"
     icon
     v-bind="$attrs"
+    :title="$t('queue')"
     :disabled="
       !store.activePlayerId ||
       (store.showFullscreenPlayer &&

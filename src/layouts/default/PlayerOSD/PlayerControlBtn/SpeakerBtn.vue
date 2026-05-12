@@ -1,5 +1,11 @@
 <template>
-  <Button variant="icon" :ripple="false" icon @click="openPlayersMenu">
+  <Button
+    variant="icon"
+    :ripple="false"
+    icon
+    :title="$t('players')"
+    @click="openPlayersMenu"
+  >
     <v-icon
       :color="color ? color : ''"
       :size="24"

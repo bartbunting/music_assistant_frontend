@@ -77,6 +77,7 @@
               variant="plain"
               style="width: 15px; margin-left: -10px"
               v-bind="props"
+              :aria-label="$t('more_options')"
             >
               <v-icon
                 icon="mdi-dots-vertical"
