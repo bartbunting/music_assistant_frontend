@@ -11,13 +11,15 @@
     <v-card
       class="fullscreen-player-card"
       :style="{ background: backgroundColor }"
+      @keydown.esc.stop.prevent="closeFullscreenPlayer"
     >
       <v-toolbar class="v-toolbar-default" color="transparent">
         <template #prepend>
           <Button
+            id="fullscreen-player-close"
             icon
             :title="$t('close')"
-            @click="store.showFullscreenPlayer = false"
+            @click="closeFullscreenPlayer"
           >
             <v-icon icon="mdi-chevron-down" />
           </Button>
@@ -581,6 +583,7 @@ import Color from "color";
 import { Heart } from "lucide-vue-next";
 import {
   computed,
+  nextTick,
   onBeforeUnmount,
   onMounted,
   ref,
@@ -625,6 +628,7 @@ const hoveredQueueIndex = ref(-1);
 const hoveredMarqueeSync = new MarqueeTextSync();
 
 // Local refs
+const fullscreenPlayerOpener = ref<HTMLElement | null>(null);
 const queueItems = ref<QueueItem[]>([]);
 const activeQueuePanel = ref(0);
 const tempHide = ref(false);
@@ -720,7 +724,11 @@ watch(
   () => store.showFullscreenPlayer,
   (isOpen) => {
     if (isOpen) {
+      rememberFullscreenPlayerOpener();
       fetchLyrics();
+      nextTick(() => focusFullscreenCloseButton());
+    } else {
+      nextTick(() => restoreFullscreenPlayerOpener());
     }
   },
 );
@@ -818,6 +826,30 @@ const itemClick = function (item: MediaItemType) {
     },
   });
 };
+
+function closeFullscreenPlayer() {
+  store.showFullscreenPlayer = false;
+}
+
+function rememberFullscreenPlayerOpener() {
+  const activeElement = document.activeElement;
+  if (activeElement instanceof HTMLElement) {
+    fullscreenPlayerOpener.value = activeElement;
+  }
+}
+
+function restoreFullscreenPlayerOpener() {
+  if (fullscreenPlayerOpener.value?.isConnected) {
+    fullscreenPlayerOpener.value.focus({ preventScroll: true });
+  }
+  fullscreenPlayerOpener.value = null;
+}
+
+function focusFullscreenCloseButton() {
+  document
+    .getElementById("fullscreen-player-close")
+    ?.focus({ preventScroll: true });
+}
 
 // Helper to parse a Music Assistant URI
 // Supports both formats:
@@ -1337,7 +1369,7 @@ onMounted(() => {
 // Handle Escape key to close fullscreen player (since persistent disables default behavior)
 const onKeydown = (e: KeyboardEvent) => {
   if (e.key === "Escape" && store.showFullscreenPlayer && !store.dialogActive) {
-    store.showFullscreenPlayer = false;
+    closeFullscreenPlayer();
   }
 };
 onMounted(() => {
