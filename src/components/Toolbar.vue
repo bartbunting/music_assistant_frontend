@@ -73,6 +73,8 @@
           v-model="overflowMenuOpen"
           location="bottom end"
           scrim
+          content-class="voiceover-options-menu"
+          :content-props="optionsMenuContentProps"
           :close-on-content-click="false"
         >
           <template #activator="{ props }">
@@ -95,12 +97,17 @@
           </template>
           <div
             ref="overflowMenuContentRef"
-            role="menu"
+            class="options-menu-panel"
             tabindex="-1"
-            :aria-label="$t('more_options')"
             @keydown.esc.stop.prevent="overflowMenuOpen = false"
           >
-            <v-list density="compact" slim tile role="group" tabindex="-1">
+            <v-list
+              density="compact"
+              slim
+              tile
+              role="presentation"
+              tabindex="-1"
+            >
               <v-list-item
                 v-for="(menuItem, index) in menuItems?.filter(
                   (x) => x.hide != true && x.overflowAllowed != false,
@@ -109,7 +116,8 @@
                 tag="button"
                 type="button"
                 class="toolbar-menu-button"
-                role="menuitem"
+                data-menu-action
+                role="button"
                 :tabindex="menuItem.disabled == true ? -1 : 0"
                 :title="$t(menuItem.label, menuItem.labelArgs || [])"
                 :disabled="menuItem.disabled == true"
@@ -173,6 +181,11 @@ const overflowMenuOpen = ref(false);
 const overflowMenuContentRef = ref<HTMLElement | null>(null);
 const overflowMenuActivator = ref<HTMLElement | null>(null);
 const { t } = useI18n();
+const optionsMenuContentProps = computed(() => ({
+  role: "dialog",
+  "aria-modal": "true",
+  "aria-label": t("more_options"),
+}));
 
 const focusOverflowMenu = (attempts = 5) => {
   nextTick(() => {
@@ -185,7 +198,7 @@ const focusOverflowMenu = (attempts = 5) => {
         return;
       }
       const firstMenuItem = menuContent.querySelector<HTMLElement>(
-        "[role='menuitem']:not([aria-disabled='true'])",
+        "[data-menu-action]:not([aria-disabled='true'])",
       );
       (firstMenuItem || menuContent).focus({ preventScroll: true });
 
@@ -328,6 +341,10 @@ export interface ToolBarMenuItem extends ContextMenuItem {
 
 .header.v-toolbar-default > .v-toolbar__content > .v-toolbar__append {
   margin-inline-end: 10px;
+}
+
+:global(.voiceover-options-menu) {
+  contain: none !important;
 }
 
 .toolbar-menu-button {

@@ -8,6 +8,8 @@
     v-model="show"
     :target="[posX, posY]"
     :scrim="TRANSPARENT_SCRIM"
+    content-class="voiceover-options-menu"
+    :content-props="optionsMenuContentProps"
     style="z-index: 999999"
     z-index="999999"
     @update:model-value="onMenuModelUpdate"
@@ -15,12 +17,11 @@
     <v-card min-width="300" max-height="450" style="overflow-y: auto">
       <div
         ref="menuContentRef"
-        role="menu"
+        class="options-menu-panel"
         tabindex="-1"
-        :aria-label="$t('more_options')"
         @keydown.esc.stop.prevent="closeMenus"
       >
-        <v-list density="compact" slim tile role="group" tabindex="-1">
+        <v-list density="compact" slim tile role="presentation" tabindex="-1">
           <!-- play menu header -->
           <div v-if="showPlayMenuHeader" class="menurow" role="none">
             <v-list-item
@@ -28,7 +29,8 @@
               tag="button"
               type="button"
               class="context-menu-button"
-              role="menuitem"
+              data-menu-action
+              role="button"
               tabindex="0"
               aria-haspopup="menu"
               append-icon="mdi-chevron-right"
@@ -66,7 +68,8 @@
               type="button"
               class="context-menu-button"
               variant="text"
-              role="menuitem"
+              data-menu-action
+              role="button"
               :tabindex="menuItem.disabled == true ? -1 : 0"
               :title="$t(menuItem.label, menuItem.labelArgs || [])"
               :disabled="menuItem.disabled == true"
@@ -110,18 +113,19 @@
     v-model="showSubmenu"
     :target="[subMenuPosX, subMenuPosY]"
     :scrim="TRANSPARENT_SCRIM"
+    content-class="voiceover-options-menu"
+    :content-props="optionsMenuContentProps"
     style="z-index: 999999"
     z-index="999999"
   >
     <v-card min-width="260">
       <div
         ref="subMenuContentRef"
-        role="menu"
+        class="options-menu-panel"
         tabindex="-1"
-        :aria-label="$t('more_options')"
         @keydown.esc.stop.prevent="closeMenus"
       >
-        <v-list density="compact" slim tile role="group" tabindex="-1">
+        <v-list density="compact" slim tile role="presentation" tabindex="-1">
           <div
             v-for="subMenuItem of subMenuItems.filter((x) => !x.hide)"
             :key="subMenuItem.label"
@@ -134,7 +138,8 @@
               type="button"
               class="context-menu-button"
               variant="text"
-              role="menuitem"
+              data-menu-action
+              role="button"
               :tabindex="subMenuItem.disabled == true ? -1 : 0"
               :title="$t(subMenuItem.label, subMenuItem.labelArgs || [])"
               :disabled="subMenuItem.disabled == true"
@@ -172,7 +177,15 @@
 import api from "@/plugins/api";
 import { ContextMenuDialogEvent, eventbus } from "@/plugins/eventbus";
 import { store } from "@/plugins/store";
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
+import { useI18n } from "vue-i18n";
 
 const show = ref<boolean>(false);
 const items = ref<ContextMenuItem[]>([]);
@@ -188,6 +201,12 @@ const menuContentRef = ref<HTMLElement | null>(null);
 const subMenuContentRef = ref<HTMLElement | null>(null);
 const menuOpener = ref<HTMLElement | null>(null);
 const TRANSPARENT_SCRIM = "#00000000";
+const { t } = useI18n();
+const optionsMenuContentProps = computed(() => ({
+  role: "dialog",
+  "aria-modal": "true",
+  "aria-label": t("more_options"),
+}));
 
 const focusableMenuItemSelector = [
   "button:not([disabled])",
@@ -202,7 +221,7 @@ function focusMenuContent(menuContent: HTMLElement | null) {
   if (!menuContent) return;
   const focusTarget =
     menuContent.querySelector<HTMLElement>(
-      "[role='menuitem']:not([aria-disabled='true'])",
+      "[data-menu-action]:not([aria-disabled='true'])",
     ) ||
     menuContent.querySelector<HTMLElement>(focusableMenuItemSelector) ||
     menuContent;
@@ -1387,6 +1406,10 @@ const radioModeSupported = function (item: MediaItemTypeOrItemMapping) {
 </script>
 
 <style scoped>
+:global(.voiceover-options-menu) {
+  contain: none !important;
+}
+
 .context-menu-button {
   width: 100%;
   border: 0;
