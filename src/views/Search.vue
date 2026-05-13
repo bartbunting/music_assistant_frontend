@@ -3,9 +3,12 @@
     <Container variant="default" style="padding-top: 20px">
       <v-text-field
         id="searchInput"
-        v-model="store.globalSearchTerm"
+        v-model="globalSearchTerm"
         clearable
         prepend-inner-icon="mdi-magnify"
+        type="search"
+        inputmode="search"
+        enterkeyhint="search"
         :label="$t('type_to_search')"
         hide-details
         variant="outlined"
@@ -196,6 +199,12 @@ const searchResult = ref<SearchResults>();
 const loading = ref(false);
 const throttleId = ref();
 const { getPreference, setPreference } = useUserPreferences();
+const globalSearchTerm = computed({
+  get: () => store.globalSearchTerm,
+  set: (value: string | null) => {
+    store.globalSearchTerm = value || "";
+  },
+});
 
 // watchers
 watch(
@@ -220,7 +229,7 @@ watch(
 );
 
 const loadSearchResults = async function (
-  searchTerm?: string,
+  searchTerm: string = "",
   filter?: MediaType,
 ) {
   loading.value = true;
@@ -288,13 +297,44 @@ onMounted(() => {
 });
 
 // lifecycle hooks
+const isInteractiveTarget = function (target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+  return Boolean(
+    target.closest(
+      [
+        "a[href]",
+        "button",
+        "input",
+        "select",
+        "textarea",
+        "[contenteditable='true']",
+        "[role='button']",
+        "[role='checkbox']",
+        "[role='menuitem']",
+        "[role='option']",
+        "[role='radio']",
+        "[role='slider']",
+        "[role='switch']",
+      ].join(","),
+    ),
+  );
+};
+
 const keyListener = function (e: KeyboardEvent) {
+  if (e.defaultPrevented || e.isComposing) {
+    return;
+  }
+
   // Ignore keyboard events with modifier keys
   if (e.ctrlKey || e.altKey || e.metaKey) {
     return;
   }
 
-  if (store.showPlayersMenu) {
+  if (store.dialogActive || store.showPlayersMenu) {
+    return;
+  }
+
+  if (isInteractiveTarget(e.target)) {
     return;
   }
 

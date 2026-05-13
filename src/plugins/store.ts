@@ -37,7 +37,7 @@ interface Store {
   activePlayer?: Player;
   activePlayerQueue?: PlayerQueue;
   curQueueItem?: QueueItem;
-  globalSearchTerm?: string;
+  globalSearchTerm: string;
   globalSearchType?: MediaType;
   prevState?: StoredState;
   prevRoute?: string;
@@ -101,7 +101,7 @@ export const store: Store = reactive({
       return store.activePlayerQueue.current_item;
     return undefined;
   }),
-  globalSearchTerm: undefined,
+  globalSearchTerm: "",
   globalSearchType: undefined,
   prevState: undefined,
   prevRoute: undefined,
