@@ -25,8 +25,11 @@
           <div v-if="showPlayMenuHeader" class="menurow" role="none">
             <v-list-item
               link
+              tag="button"
+              type="button"
+              class="context-menu-button"
               role="menuitem"
-              tabindex="-1"
+              tabindex="0"
               aria-haspopup="menu"
               append-icon="mdi-chevron-right"
               :title="$t('play_on')"
@@ -59,9 +62,12 @@
             role="none"
           >
             <v-list-item
+              tag="button"
+              type="button"
+              class="context-menu-button"
               variant="text"
               role="menuitem"
-              tabindex="-1"
+              :tabindex="menuItem.disabled == true ? -1 : 0"
               :title="$t(menuItem.label, menuItem.labelArgs || [])"
               :disabled="menuItem.disabled == true"
               :aria-disabled="menuItem.disabled == true ? 'true' : undefined"
@@ -124,9 +130,12 @@
             role="none"
           >
             <v-list-item
+              tag="button"
+              type="button"
+              class="context-menu-button"
               variant="text"
               role="menuitem"
-              tabindex="-1"
+              :tabindex="subMenuItem.disabled == true ? -1 : 0"
               :title="$t(subMenuItem.label, subMenuItem.labelArgs || [])"
               :disabled="subMenuItem.disabled == true"
               :aria-disabled="subMenuItem.disabled == true ? 'true' : undefined"
@@ -304,6 +313,11 @@ const menuItemClicked = function (
   evt: MouseEvent | KeyboardEvent,
   menuItem: ContextMenuItem,
 ) {
+  if (menuItem.disabled) {
+    evt.preventDefault();
+    return;
+  }
+
   if (menuItem.subItems) {
     evt.preventDefault();
     subMenuItems.value = menuItem.subItems;
@@ -1373,6 +1387,12 @@ const radioModeSupported = function (item: MediaItemTypeOrItemMapping) {
 </script>
 
 <style scoped>
+.context-menu-button {
+  width: 100%;
+  border: 0;
+  text-align: start;
+}
+
 .menurow :deep(.v-list-item__prepend) {
   width: 45px;
   margin-left: -5px;

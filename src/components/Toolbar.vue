@@ -106,8 +106,11 @@
                   (x) => x.hide != true && x.overflowAllowed != false,
                 )"
                 :key="index"
+                tag="button"
+                type="button"
+                class="toolbar-menu-button"
                 role="menuitem"
-                tabindex="-1"
+                :tabindex="menuItem.disabled == true ? -1 : 0"
                 :title="$t(menuItem.label, menuItem.labelArgs || [])"
                 :disabled="menuItem.disabled == true"
                 :aria-disabled="menuItem.disabled == true ? 'true' : undefined"
@@ -223,6 +226,8 @@ const onMenuItemClick = (
   menuItem: ToolBarMenuItem,
 ) => {
   event.preventDefault();
+  if (menuItem.disabled) return;
+
   if (menuItem.subItems?.length) {
     // Open submenu via global context menu
     // Map closeOnContentClick to close_on_click on subItems if needed
@@ -323,6 +328,12 @@ export interface ToolBarMenuItem extends ContextMenuItem {
 
 .header.v-toolbar-default > .v-toolbar__content > .v-toolbar__append {
   margin-inline-end: 10px;
+}
+
+.toolbar-menu-button {
+  width: 100%;
+  border: 0;
+  text-align: start;
 }
 
 /* Mobile branding on the left */
