@@ -13,11 +13,20 @@ import type { HTMLAttributes } from "vue";
 import { computed } from "vue";
 
 const props = defineProps<
-  SliderRootProps & { class?: HTMLAttributes["class"] }
+  SliderRootProps & {
+    class?: HTMLAttributes["class"];
+    getValueText?: (value: number) => string;
+    thumbLabel?: string;
+  }
 >();
 const emits = defineEmits<SliderRootEmits>();
 
-const delegatedProps = reactiveOmit(props, "class");
+const delegatedProps = reactiveOmit(
+  props,
+  "class",
+  "getValueText",
+  "thumbLabel",
+);
 
 const forwardedProps = useForwardPropsEmits(delegatedProps, emits);
 
@@ -25,6 +34,10 @@ const forwarded = computed(() => ({
   ...forwardedProps.value,
   thumbAlignment: props.thumbAlignment ?? "overflow",
 }));
+
+const getThumbValueText = (value: unknown) => {
+  return typeof value === "number" ? props.getValueText?.(value) : undefined;
+};
 </script>
 
 <template>
@@ -54,6 +67,8 @@ const forwarded = computed(() => ({
       :key="key"
       data-slot="slider-thumb"
       class="grid place-items-center bg-transparent size-[32px] shrink-0 rounded-full transition-[color,box-shadow] focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 before:block before:size-[10px] before:rounded-full before:bg-[_rgb(var(--v-theme-surface-variant))] before:shadow-[0_1px_3px_rgba(0,0,0,0.35)] hover:before:shadow-[0_0_0_5px_rgba(var(--v-theme-surface-variant),0.05)]"
+      :aria-label="props.thumbLabel"
+      :aria-valuetext="getThumbValueText(modelValue?.[key])"
     />
   </SliderRoot>
 </template>

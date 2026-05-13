@@ -95,6 +95,8 @@
         :min="0"
         :max="100"
         :step="step"
+        :thumb-label="volumeSliderLabel"
+        :get-value-text="getVolumeSliderValueText"
         class="volume-slider"
         :class="cn('w-full', props.class)"
         @update:model-value="onSliderUpdate"
@@ -204,6 +206,13 @@ const muteButtonLabel = computed(() => {
   const action = isMuted.value ? "Unmute" : "Mute";
   return `${action} ${getPlayerName(props.player, 27)}`;
 });
+
+const volumeSliderLabel = computed(
+  () => `Volume for ${getPlayerName(props.player, 27)}`,
+);
+
+const getVolumeSliderValueText = (value: number) =>
+  `${Math.round(value)} percent`;
 
 const isSliderDisabled = computed(() => isDisabled.value || isMuted.value);
 
@@ -738,6 +747,10 @@ watch(
   .volume-slider,
   .volume-slider :deep(*) {
     pointer-events: none;
+  }
+
+  .volume-slider :deep([role="slider"]) {
+    pointer-events: auto;
   }
 }
 </style>
