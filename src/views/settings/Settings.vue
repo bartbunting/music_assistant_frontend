@@ -1,6 +1,10 @@
 <template>
   <div>
-    <Toolbar :icon="Settings">
+    <Toolbar
+      :icon="isOverview ? Settings : ArrowLeft"
+      :icon-action="isOverview ? undefined : returnFromSettingsSubpage"
+      :icon-label="isOverview ? undefined : t('back')"
+    >
       <template #title>
         <v-breadcrumbs :items="breadcrumbItems" class="pa-0" />
       </template>
@@ -303,9 +307,9 @@ import { requireServerVersion } from "@/plugins/api/helpers";
 import { ProviderType } from "@/plugins/api/interfaces";
 import { authManager } from "@/plugins/auth";
 import { store } from "@/plugins/store";
-import { Settings } from "lucide-vue-next";
+import { ArrowLeft, Settings } from "lucide-vue-next";
 import { match } from "ts-pattern";
-import { computed, provide, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, type RouteLocationRaw } from "vue-router";
 import { useDisplay } from "vuetify";
@@ -663,6 +667,40 @@ const getIconBackgroundStyle = (color: string) => {
 // computed properties
 const isOverview = computed(() => {
   return router.currentRoute.value.name === "settings";
+});
+
+const hasActiveOverlay = function () {
+  return Boolean(
+    document.querySelector(
+      ".v-overlay--active, [role='dialog']:not([aria-hidden='true'])",
+    ),
+  );
+};
+
+const returnFromSettingsSubpage = function () {
+  if (isOverview.value) return;
+
+  if (window.history.state?.back) {
+    router.back();
+  } else {
+    router.push({ name: "settings" });
+  }
+};
+
+const handleSettingsEscape = function (event: KeyboardEvent) {
+  if (event.defaultPrevented || event.key !== "Escape") return;
+  if (isOverview.value || store.dialogActive || hasActiveOverlay()) return;
+
+  event.preventDefault();
+  returnFromSettingsSubpage();
+};
+
+onMounted(() => {
+  document.addEventListener("keydown", handleSettingsEscape);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener("keydown", handleSettingsEscape);
 });
 
 const activeTab = computed(() => {
