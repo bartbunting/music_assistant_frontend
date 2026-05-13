@@ -53,15 +53,11 @@
             size="icon"
             class="help-btn"
             :aria-label="getHelpButtonLabel(conf_entry)"
-            :title="getHelpButtonLabel(conf_entry)"
-            @click="
-              $t(
-                `settings.${conf_entry?.key}.description`,
-                conf_entry.description || '',
-              )
-                ? (showHelpInfo = conf_entry)
-                : openLink(conf_entry.help_link!)
+            :aria-haspopup="
+              hasConfigEntryDescription(conf_entry) ? 'dialog' : undefined
             "
+            :title="getHelpButtonLabel(conf_entry)"
+            @click="openHelp(conf_entry)"
           >
             <HelpCircle :size="20" />
           </Button>
@@ -128,15 +124,11 @@
             size="icon"
             class="help-btn"
             :aria-label="getHelpButtonLabel(conf_entry)"
-            :title="getHelpButtonLabel(conf_entry)"
-            @click="
-              $t(
-                `settings.${conf_entry?.key}.description`,
-                conf_entry.description || '',
-              )
-                ? (showHelpInfo = conf_entry)
-                : openLink(conf_entry.help_link!)
+            :aria-haspopup="
+              hasConfigEntryDescription(conf_entry) ? 'dialog' : undefined
             "
+            :title="getHelpButtonLabel(conf_entry)"
+            @click="openHelp(conf_entry)"
           >
             <HelpCircle :size="20" />
           </Button>
@@ -201,15 +193,11 @@
               size="icon"
               class="help-btn"
               :aria-label="getHelpButtonLabel(conf_entry)"
-              :title="getHelpButtonLabel(conf_entry)"
-              @click="
-                $t(
-                  `settings.${conf_entry?.key}.description`,
-                  conf_entry.description || '',
-                )
-                  ? (showHelpInfo = conf_entry)
-                  : openLink(conf_entry.help_link!)
+              :aria-haspopup="
+                hasConfigEntryDescription(conf_entry) ? 'dialog' : undefined
               "
+              :title="getHelpButtonLabel(conf_entry)"
+              @click="openHelp(conf_entry)"
             >
               <HelpCircle :size="20" />
             </Button>
@@ -321,15 +309,11 @@
                   size="icon"
                   class="help-btn"
                   :aria-label="getHelpButtonLabel(conf_entry)"
-                  :title="getHelpButtonLabel(conf_entry)"
-                  @click="
-                    $t(
-                      `settings.${conf_entry?.key}.description`,
-                      conf_entry.description || '',
-                    )
-                      ? (showHelpInfo = conf_entry)
-                      : openLink(conf_entry.help_link!)
+                  :aria-haspopup="
+                    hasConfigEntryDescription(conf_entry) ? 'dialog' : undefined
                   "
+                  :title="getHelpButtonLabel(conf_entry)"
+                  @click="openHelp(conf_entry)"
                 >
                   <HelpCircle :size="20" />
                 </Button>
@@ -393,15 +377,11 @@
             size="icon"
             class="help-btn"
             :aria-label="getHelpButtonLabel(conf_entry)"
-            :title="getHelpButtonLabel(conf_entry)"
-            @click="
-              $t(
-                `settings.${conf_entry?.key}.description`,
-                conf_entry.description || '',
-              )
-                ? (showHelpInfo = conf_entry)
-                : openLink(conf_entry.help_link!)
+            :aria-haspopup="
+              hasConfigEntryDescription(conf_entry) ? 'dialog' : undefined
             "
+            :title="getHelpButtonLabel(conf_entry)"
+            @click="openHelp(conf_entry)"
           >
             <HelpCircle :size="20" />
           </Button>
@@ -954,20 +934,29 @@ const getCategoryIcon = function (category: string): string {
   return iconMap[category] || "mdi-cog-outline";
 };
 
-const hasDescriptionOrHelpLink = function (conf_entry: ConfigEntryUI) {
-  // overly complicated way to determine we have a description for the entry
-  // in either the translations (by entry key), on the entry itself as fallback
-  // OR it has a help link
-  return (
-    (
-      $t(
-        `settings.${conf_entry?.key}.description`,
-        conf_entry.description || " ",
-      ) ||
-      conf_entry.help_link ||
-      " "
-    )?.length > 1
+const getConfigEntryDescription = function (conf_entry: ConfigEntryUI) {
+  return $t(
+    `settings.${conf_entry?.key}.description`,
+    conf_entry.description || "",
   );
+};
+
+const hasConfigEntryDescription = function (conf_entry: ConfigEntryUI) {
+  return getConfigEntryDescription(conf_entry).trim().length > 0;
+};
+
+const hasDescriptionOrHelpLink = function (conf_entry: ConfigEntryUI) {
+  return hasConfigEntryDescription(conf_entry) || !!conf_entry.help_link;
+};
+
+const openHelp = function (conf_entry: ConfigEntryUI) {
+  if (hasConfigEntryDescription(conf_entry)) {
+    showHelpInfo.value = conf_entry;
+    return;
+  }
+  if (conf_entry.help_link) {
+    openLink(conf_entry.help_link);
+  }
 };
 
 const getConfigEntryLabel = function (conf_entry: ConfigEntryUI) {
@@ -986,7 +975,11 @@ const getConfigEntryLabel = function (conf_entry: ConfigEntryUI) {
 };
 
 const getHelpButtonLabel = function (conf_entry: ConfigEntryUI) {
-  return `${$t("details")}: ${getConfigEntryLabel(conf_entry)}`;
+  const label = getConfigEntryLabel(conf_entry);
+  const translationKey = hasConfigEntryDescription(conf_entry)
+    ? "show_help_for"
+    : "open_help_for";
+  return $t(translationKey, [label]);
 };
 </script>
 
