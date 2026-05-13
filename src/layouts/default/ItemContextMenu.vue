@@ -20,17 +20,21 @@
         :aria-label="$t('more_options')"
         @keydown.esc.stop.prevent="closeMenus"
       >
-        <v-list density="compact" slim tile>
+        <v-list density="compact" slim tile role="group" tabindex="-1">
           <!-- play menu header -->
-          <div v-if="showPlayMenuHeader" class="menurow">
+          <div v-if="showPlayMenuHeader" class="menurow" role="none">
             <v-list-item
               link
               role="menuitem"
+              tabindex="-1"
+              aria-haspopup="menu"
               append-icon="mdi-chevron-right"
               :title="$t('play_on')"
               :subtitle="store.activePlayer?.name || $t('no_player')"
               style="padding-left: 25px"
               @click.stop="playMenuHeaderClicked"
+              @keydown.enter.prevent.stop="playMenuHeaderClicked"
+              @keydown.space.prevent.stop="playMenuHeaderClicked"
             >
               <template #prepend>
                 <v-icon
@@ -52,12 +56,16 @@
             :key="menuItem.label"
             class="menurow"
             :class="{ 'menu-item-error': menuItem.color === 'error' }"
+            role="none"
           >
             <v-list-item
               variant="text"
               role="menuitem"
+              tabindex="-1"
               :title="$t(menuItem.label, menuItem.labelArgs || [])"
               :disabled="menuItem.disabled == true"
+              :aria-disabled="menuItem.disabled == true ? 'true' : undefined"
+              :aria-haspopup="menuItem.subItems?.length ? 'menu' : undefined"
               :prepend-icon="
                 typeof menuItem.icon === 'string' ? menuItem.icon : undefined
               "
@@ -72,6 +80,12 @@
               "
               style="padding-left: 25px"
               @click.stop="(e) => menuItemClicked(e, menuItem)"
+              @keydown.enter.prevent.stop="
+                (e: KeyboardEvent) => menuItemClicked(e, menuItem)
+              "
+              @keydown.space.prevent.stop="
+                (e: KeyboardEvent) => menuItemClicked(e, menuItem)
+              "
             >
               <template
                 v-if="menuItem.icon && typeof menuItem.icon !== 'string'"
@@ -101,18 +115,21 @@
         :aria-label="$t('more_options')"
         @keydown.esc.stop.prevent="closeMenus"
       >
-        <v-list density="compact" slim tile>
+        <v-list density="compact" slim tile role="group" tabindex="-1">
           <div
             v-for="subMenuItem of subMenuItems.filter((x) => !x.hide)"
             :key="subMenuItem.label"
             class="menurow"
             :class="{ 'menu-item-error': subMenuItem.color === 'error' }"
+            role="none"
           >
             <v-list-item
               variant="text"
               role="menuitem"
+              tabindex="-1"
               :title="$t(subMenuItem.label, subMenuItem.labelArgs || [])"
               :disabled="subMenuItem.disabled == true"
+              :aria-disabled="subMenuItem.disabled == true ? 'true' : undefined"
               :prepend-icon="
                 typeof subMenuItem.icon === 'string'
                   ? subMenuItem.icon
@@ -121,6 +138,12 @@
               :color="subMenuItem.color"
               :append-icon="subMenuItem.selected ? 'mdi-check' : undefined"
               @click.stop="(e) => menuItemClicked(e, subMenuItem)"
+              @keydown.enter.prevent.stop="
+                (e: KeyboardEvent) => menuItemClicked(e, subMenuItem)
+              "
+              @keydown.space.prevent.stop="
+                (e: KeyboardEvent) => menuItemClicked(e, subMenuItem)
+              "
             >
               <template
                 v-if="subMenuItem.icon && typeof subMenuItem.icon !== 'string'"
@@ -284,8 +307,9 @@ const menuItemClicked = function (
   if (menuItem.subItems) {
     evt.preventDefault();
     subMenuItems.value = menuItem.subItems;
-    subMenuPosX.value = (evt as PointerEvent).clientX;
-    subMenuPosY.value = (evt as PointerEvent).clientY;
+    const { x, y } = getMenuEventPosition(evt);
+    subMenuPosX.value = x;
+    subMenuPosY.value = y;
     showSubmenu.value = true;
     return;
   } else if (menuItem.action) {
@@ -332,10 +356,25 @@ const playMenuHeaderClicked = function (evt: MouseEvent | KeyboardEvent) {
   }
 
   subMenuItems.value = _subItems;
-  subMenuPosX.value = (evt as PointerEvent).clientX;
-  subMenuPosY.value = (evt as PointerEvent).clientY;
+  const { x, y } = getMenuEventPosition(evt);
+  subMenuPosX.value = x;
+  subMenuPosY.value = y;
   showSubmenu.value = true;
 };
+
+function getMenuEventPosition(evt: MouseEvent | KeyboardEvent) {
+  if ("clientX" in evt && "clientY" in evt && evt.clientX && evt.clientY) {
+    return { x: evt.clientX, y: evt.clientY };
+  }
+
+  const target = evt.currentTarget;
+  if (target instanceof HTMLElement) {
+    const rect = target.getBoundingClientRect();
+    return { x: rect.right, y: rect.top };
+  }
+
+  return { x: posX.value, y: posY.value };
+}
 </script>
 
 <script lang="ts">
