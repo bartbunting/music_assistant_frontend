@@ -13,7 +13,13 @@
     @contextmenu.prevent="openPlayerMenu"
   >
     <!-- now playing media -->
-    <v-list-item class="panel-item-details" flat :ripple="false">
+    <v-list-item
+      class="panel-item-details"
+      flat
+      role="group"
+      tabindex="-1"
+      :ripple="false"
+    >
       <!-- prepend: media thumb -->
       <template #prepend>
         <div class="player-media-thumb">

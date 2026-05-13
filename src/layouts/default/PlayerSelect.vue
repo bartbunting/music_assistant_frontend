@@ -46,7 +46,12 @@
       <!-- scrollable content -->
       <div class="player-content">
         <!-- preferred/active players on top -->
-        <v-list flat style="margin: 0px 10px; padding: 0">
+        <v-list
+          flat
+          role="group"
+          tabindex="-1"
+          style="margin: 0px 10px; padding: 0"
+        >
           <PlayerCard
             v-for="player in preferredPlayers"
             :id="player.player_id"
@@ -90,7 +95,12 @@
                   </InputGroupAddon>
                 </InputGroup>
               </div>
-              <v-list flat style="margin: -20px 3px 5px 3px">
+              <v-list
+                flat
+                role="group"
+                tabindex="-1"
+                style="margin: -20px 3px 5px 3px"
+              >
                 <PlayerCard
                   v-for="player in filteredPlayers"
                   :id="player.player_id"

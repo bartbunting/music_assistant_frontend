@@ -1,10 +1,17 @@
 <template>
-  <v-list style="overflow: hidden; padding: 0" lines="two">
+  <v-list
+    style="overflow: hidden; padding: 0"
+    lines="two"
+    role="group"
+    tabindex="-1"
+  >
     <!-- main (or group) volume/power -->
     <!-- mute btn + player name + optional sync checkbox-->
     <v-list-item
       v-if="showHeadingRow"
       class="volumesliderrow heading"
+      role="group"
+      tabindex="-1"
       :link="false"
       :style="player.powered == false ? 'opacity: 0.6' : 'opacity: 1'"
     >
@@ -72,6 +79,8 @@
         <!-- player icon + player name + optional sync checkbox-->
         <v-list-item
           class="volumesliderrow"
+          role="group"
+          tabindex="-1"
           :link="false"
           :style="
             childPlayer.powered != false || showSyncControls
