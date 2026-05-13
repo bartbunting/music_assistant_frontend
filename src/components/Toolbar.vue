@@ -81,6 +81,9 @@
               style="width: 15px; margin-left: -10px"
               v-bind="props"
               :aria-label="$t('more_options')"
+              aria-haspopup="menu"
+              :aria-expanded="overflowMenuOpen ? 'true' : 'false'"
+              @click="rememberOverflowMenuActivator"
             >
               <v-icon
                 icon="mdi-dots-vertical"
@@ -90,43 +93,62 @@
               />
             </v-btn>
           </template>
-          <v-list density="compact" slim tile>
-            <v-list-item
-              v-for="(menuItem, index) in menuItems?.filter(
-                (x) => x.hide != true && x.overflowAllowed != false,
-              )"
-              :key="index"
-              :title="$t(menuItem.label, menuItem.labelArgs || [])"
-              :disabled="menuItem.disabled == true"
-              :append-icon="
-                menuItem.subItems?.length ? 'mdi-chevron-right' : undefined
-              "
-              @click.prevent.stop="
-                (e: MouseEvent | KeyboardEvent) => onMenuItemClick(e, menuItem)
-              "
-            >
-              <template v-if="menuItem.icon" #prepend>
-                <v-badge
-                  :model-value="menuItem.active == true"
-                  color="primary"
-                  dot
-                >
-                  <v-icon
-                    v-if="typeof menuItem.icon === 'string'"
-                    :icon="menuItem.icon"
-                    :color="$vuetify.theme.current.dark ? '#fff' : '#000'"
-                    size="22px"
-                  />
-                  <component
-                    :is="menuItem.icon"
-                    v-else
-                    class="w-[22px] h-[22px]"
-                    :color="$vuetify.theme.current.dark ? '#fff' : '#000'"
-                  />
-                </v-badge>
-              </template>
-            </v-list-item>
-          </v-list>
+          <div
+            ref="overflowMenuContentRef"
+            role="menu"
+            tabindex="-1"
+            :aria-label="$t('more_options')"
+            @keydown.esc.stop.prevent="overflowMenuOpen = false"
+          >
+            <v-list density="compact" slim tile role="group" tabindex="-1">
+              <v-list-item
+                v-for="(menuItem, index) in menuItems?.filter(
+                  (x) => x.hide != true && x.overflowAllowed != false,
+                )"
+                :key="index"
+                role="menuitem"
+                tabindex="-1"
+                :title="$t(menuItem.label, menuItem.labelArgs || [])"
+                :disabled="menuItem.disabled == true"
+                :aria-disabled="menuItem.disabled == true ? 'true' : undefined"
+                :aria-haspopup="menuItem.subItems?.length ? 'menu' : undefined"
+                :append-icon="
+                  menuItem.subItems?.length ? 'mdi-chevron-right' : undefined
+                "
+                @click.prevent.stop="
+                  (e: MouseEvent | KeyboardEvent) =>
+                    onMenuItemClick(e, menuItem)
+                "
+                @keydown.enter.prevent.stop="
+                  (e: KeyboardEvent) => onMenuItemClick(e, menuItem)
+                "
+                @keydown.space.prevent.stop="
+                  (e: KeyboardEvent) => onMenuItemClick(e, menuItem)
+                "
+              >
+                <template v-if="menuItem.icon" #prepend>
+                  <v-badge
+                    :model-value="menuItem.active == true"
+                    color="primary"
+                    dot
+                  >
+                    <v-icon
+                      v-if="typeof menuItem.icon === 'string'"
+                      :icon="menuItem.icon"
+                      :color="$vuetify.theme.current.dark ? '#fff' : '#000'"
+                      size="22px"
+                    />
+                    <component
+                      :is="menuItem.icon"
+                      v-else
+                      class="w-[22px] h-[22px]"
+                      :color="$vuetify.theme.current.dark ? '#fff' : '#000'"
+                    />
+                  </v-badge>
+                </template>
+              </v-list-item>
+            </v-list>
+          </div>
         </v-menu>
       </div>
     </template>
@@ -141,11 +163,60 @@ import { store } from "@/plugins/store";
 import { getBreakpointValue } from "../plugins/breakpoint";
 
 import type { Component } from "vue";
-import { computed, ref } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
 const overflowMenuOpen = ref(false);
+const overflowMenuContentRef = ref<HTMLElement | null>(null);
+const overflowMenuActivator = ref<HTMLElement | null>(null);
 const { t } = useI18n();
+
+const focusOverflowMenu = (attempts = 5) => {
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      const menuContent = overflowMenuContentRef.value;
+      if (!menuContent) {
+        if (attempts > 0) {
+          window.setTimeout(() => focusOverflowMenu(attempts - 1), 50);
+        }
+        return;
+      }
+      const firstMenuItem = menuContent.querySelector<HTMLElement>(
+        "[role='menuitem']:not([aria-disabled='true'])",
+      );
+      (firstMenuItem || menuContent).focus({ preventScroll: true });
+
+      if (attempts > 0) {
+        window.setTimeout(() => {
+          if (
+            overflowMenuOpen.value &&
+            !menuContent.contains(document.activeElement)
+          ) {
+            focusOverflowMenu(attempts - 1);
+          }
+        }, 50);
+      }
+    });
+  });
+};
+
+const rememberOverflowMenuActivator = () => {
+  if (document.activeElement instanceof HTMLElement) {
+    overflowMenuActivator.value = document.activeElement;
+  }
+};
+
+watch(overflowMenuOpen, (open) => {
+  if (open) {
+    focusOverflowMenu();
+    return;
+  }
+
+  if (overflowMenuActivator.value?.isConnected) {
+    overflowMenuActivator.value.focus({ preventScroll: true });
+  }
+  overflowMenuActivator.value = null;
+});
 
 const onMenuItemClick = (
   event: MouseEvent | KeyboardEvent,
