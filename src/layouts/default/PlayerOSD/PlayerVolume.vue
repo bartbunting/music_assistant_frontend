@@ -89,17 +89,28 @@
         </button>
       </div>
 
-      <Slider
-        :model-value="[displayValue]"
+      <input
+        class="volume-slider"
+        :class="props.class"
+        type="range"
+        :value="displayValue"
         :disabled="isSliderDisabled"
         :min="0"
         :max="100"
         :step="step"
-        :thumb-label="volumeSliderLabel"
-        :get-value-text="getVolumeSliderValueText"
-        class="volume-slider"
-        :class="cn('w-full', props.class)"
-        @update:model-value="onSliderUpdate"
+        :aria-label="volumeSliderLabel"
+        :aria-valuetext="getVolumeSliderValueText(displayValue)"
+        :title="volumeSliderLabel"
+        :style="{ '--volume-level': `${displayValue}%` }"
+        @input="onRangeInput"
+        @change="onRangeChange"
+        @keydown.stop
+        @keyup.stop
+        @click.stop
+        @touchstart.stop
+        @touchmove.stop
+        @touchend.stop
+        @touchcancel.stop
       />
 
       <!-- Volume level display -->
@@ -118,13 +129,11 @@
 </template>
 
 <script setup lang="ts">
-import { Slider } from "@/components/ui/slider";
 import {
   getPlayerName,
   getVolumeIconComponent,
   truncateString,
 } from "@/helpers/utils";
-import { cn } from "@/lib/utils";
 import { api } from "@/plugins/api";
 import {
   type Player,
@@ -610,16 +619,18 @@ const onWheel = (event: WheelEvent) => {
   }
 };
 
-const onSliderUpdate = (values: number[] | undefined) => {
+const onSliderUpdate = (value: number | number[] | undefined) => {
   if (
     isSliderDisabled.value ||
     isScrolling.value ||
     isTouching.value ||
-    !values
+    value === undefined
   )
     return;
 
-  const newValue = values[0] ?? displayValue.value;
+  const newValue = Array.isArray(value)
+    ? (value[0] ?? displayValue.value)
+    : value;
   startDragging();
   displayValue.value = newValue;
   emit("update:local-value", newValue);
@@ -634,6 +645,28 @@ const onSliderUpdate = (values: number[] | undefined) => {
     sliderUpdateDebounceTimeout = null;
     stopDragging();
   }, SLIDER_UPDATE_DEBOUNCE_MS);
+};
+
+const getRangeValue = (event: Event) => {
+  return Number((event.target as HTMLInputElement).value);
+};
+
+const onRangeInput = (event: Event) => {
+  onSliderUpdate(getRangeValue(event));
+};
+
+const onRangeChange = (event: Event) => {
+  const newValue = getRangeValue(event);
+  displayValue.value = newValue;
+  emit("update:local-value", newValue);
+
+  if (sliderUpdateDebounceTimeout) {
+    clearTimeout(sliderUpdateDebounceTimeout);
+    sliderUpdateDebounceTimeout = null;
+    setVolume(newValue);
+  }
+
+  stopDragging();
 };
 
 // Desktop: click on slider area toggles popout for group players
@@ -741,18 +774,79 @@ watch(
   margin-left: 8px;
 }
 
-/* --- Group volume popout styles are in the unscoped style block below --- */
-
-@media (pointer: coarse) {
-  .volume-slider,
-  .volume-slider :deep(*) {
-    pointer-events: none;
-  }
-
-  .volume-slider :deep([role="slider"]) {
-    pointer-events: auto;
-  }
+.volume-slider {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 14px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-x;
+  -webkit-appearance: none;
 }
+
+.volume-slider:disabled {
+  cursor: not-allowed;
+}
+
+.volume-slider:focus {
+  outline: none;
+}
+
+.volume-slider:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+
+.volume-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    rgb(var(--v-theme-surface-variant)) 0,
+    rgb(var(--v-theme-surface-variant)) var(--volume-level),
+    rgba(var(--v-theme-on-surface), 0.24) var(--volume-level),
+    rgba(var(--v-theme-on-surface), 0.24) 100%
+  );
+}
+
+.volume-slider::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(var(--v-theme-surface-variant));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  -webkit-appearance: none;
+}
+
+.volume-slider::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(var(--v-theme-on-surface), 0.24);
+}
+
+.volume-slider::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(var(--v-theme-surface-variant));
+}
+
+.volume-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(var(--v-theme-surface-variant));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+/* --- Group volume popout styles are in the unscoped style block below --- */
 </style>
 
 <!-- Unscoped styles for the teleported popout -->
