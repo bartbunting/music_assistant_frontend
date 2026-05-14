@@ -150,9 +150,12 @@
                   v-for="(artist, artistindex) in item.artists"
                   :key="artist.item_id"
                 >
-                  <a style="color: accent" @click="artistClick(artist)">{{
-                    artist.name
-                  }}</a>
+                  <a
+                    :href="getMediaItemHref(artist)"
+                    style="color: accent; text-decoration: none"
+                    @click.prevent="artistClick(artist)"
+                    >{{ artist.name }}</a
+                  >
                   <span
                     v-if="artistindex + 1 < item.artists.length"
                     :key="artistindex"
@@ -260,8 +263,9 @@
               />
               <MarqueeText :sync="marqueeSync">
                 <a
+                  :href="getMediaItemHref((item as Track).album)"
                   style="color: secondary"
-                  @click="albumClick((item as Track)?.album)"
+                  @click.prevent="albumClick((item as Track).album)"
                   >{{ item.album.name }}</a
                 ><span v-if="'year' in item.album && item.album.year">
                   • {{ item.album.year }}</span
@@ -414,6 +418,7 @@ import {
   getGenreDescription,
   getGenreDisplayName,
   getImageThumbForItem,
+  getMediaItemHref,
   handleMediaItemClick,
   handlePlayBtnClick,
   markdownToHtml,

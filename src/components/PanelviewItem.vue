@@ -7,9 +7,16 @@
       hover
       class="panel-item"
       :class="{ unavailable: !isAvailable }"
-      @click="onClick"
+      @click.prevent="onClick"
       @click.right.prevent="onMenu"
     >
+      <a
+        v-if="itemHref"
+        class="panel-item-link"
+        :href="itemHref"
+        :aria-label="displayName"
+        @click.prevent.stop="onClick"
+      ></a>
       <v-overlay
         v-if="showCheckboxes"
         :model-value="showCheckboxes"
@@ -180,6 +187,7 @@ import {
   getArtistsString,
   getBrowseFolderName,
   getGenreDisplayName,
+  getMediaItemHref,
   handleMediaItemClick,
   handleMenuBtnClick,
   handlePlayBtnClick,
@@ -242,6 +250,9 @@ const playButtonLabel = computed(() => `${t("play")} ${displayName.value}`);
 const menuButtonLabel = computed(
   () => `${t("more_options")} ${displayName.value}`,
 );
+const itemHref = computed(() =>
+  compProps.showCheckboxes ? undefined : getMediaItemHref(compProps.item),
+);
 
 // computed properties
 const HiResDetails = computed(() => {
@@ -288,7 +299,7 @@ const onMenu = function (evt: PointerEvent | TouchEvent | MouseEvent) {
   );
 };
 
-const onClick = function (evt: PointerEvent) {
+const onClick = function (evt: MouseEvent) {
   if (compProps.showCheckboxes) {
     emit("select", compProps.item, compProps.isSelected ? false : true);
     return;
@@ -320,10 +331,24 @@ const onPlayClick = function (evt: PointerEvent) {
 }
 
 .panel-item {
+  position: relative;
   height: 100%;
   padding: 10px;
   border: none;
   border-style: none !important;
+}
+
+.panel-item-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+.panel-item > .v-btn,
+.panel-item-actions {
+  position: relative;
+  z-index: 2;
 }
 
 .panel-item-checkbox {
