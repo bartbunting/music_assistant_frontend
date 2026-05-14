@@ -17,7 +17,7 @@
       'player-panel--open': store.showPlayersMenu,
     }"
     role="dialog"
-    aria-modal="true"
+    :aria-modal="store.contextMenuActive ? undefined : 'true'"
     :aria-hidden="store.showPlayersMenu ? undefined : 'true'"
     :inert="!store.showPlayersMenu"
     :aria-labelledby="playerPanelTitleId"

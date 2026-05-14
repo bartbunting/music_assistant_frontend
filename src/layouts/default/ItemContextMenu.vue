@@ -312,6 +312,10 @@ watch(showSubmenu, (open) => {
   }
 });
 
+watch([show, showSubmenu], ([menuOpen, submenuOpen]) => {
+  store.contextMenuActive = menuOpen || submenuOpen;
+});
+
 onMounted(() => {
   eventbus.on("contextmenu", async (evt: ContextMenuDialogEvent) => {
     rememberMenuOpener();
@@ -324,6 +328,7 @@ onMounted(() => {
     });
   });
   onBeforeUnmount(() => {
+    store.contextMenuActive = false;
     eventbus.off("contextmenu");
   });
 });
