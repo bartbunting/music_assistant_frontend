@@ -287,6 +287,7 @@
               :width="220"
               icon="mdi-play-circle-outline"
               :text="truncateString($t('play'), 14)"
+              :menu-button-label="`${$t('more_options')}: ${$t('play')}`"
               :disabled="!item"
               :loading="
                 store.activePlayerQueue &&
