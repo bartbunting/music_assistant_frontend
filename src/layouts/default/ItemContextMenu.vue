@@ -6,10 +6,13 @@
 <template>
   <Teleport :to="menuTeleportTarget">
     <div
-      v-if="show"
       class="context-menu-layer"
-      :class="{ 'context-menu-layer--panel': menuTeleportedToPlayerPanel }"
-      @click.self="closeMenus"
+      :class="{
+        'context-menu-layer--open': show,
+        'context-menu-layer--panel': menuTeleportedToPlayerPanel,
+      }"
+      :aria-hidden="show ? undefined : 'true'"
+      @click.self="show && closeMenus()"
     >
       <div
         id="global-context-menu"
@@ -17,6 +20,8 @@
         role="menu"
         tabindex="-1"
         :aria-label="$t('more_options')"
+        aria-describedby="global-context-menu-debug"
+        data-vo-debug-marker="ma-context-menu-persistent-dom-2026-05-14"
         :style="menuPositionStyle"
         @click.stop
       >
@@ -27,6 +32,9 @@
             tabindex="-1"
             @keydown.esc.stop.prevent="closeMenus"
           >
+            <span id="global-context-menu-debug" class="sr-only">
+              MA context menu persistent DOM test
+            </span>
             <v-list
               density="compact"
               slim
@@ -130,12 +138,13 @@
       </div>
       <!-- submenu -->
       <div
-        v-if="showSubmenu"
         id="global-context-submenu"
         class="context-menu-shell voiceover-options-menu"
+        :class="{ 'context-menu-shell--hidden': !showSubmenu }"
         role="menu"
         tabindex="-1"
         :aria-label="$t('more_options')"
+        :aria-hidden="showSubmenu ? undefined : 'true'"
         :style="subMenuPositionStyle"
         @click.stop
       >
@@ -1623,12 +1632,23 @@ const radioModeSupported = function (item: MediaItemTypeOrItemMapping) {
   position: fixed;
   inset: 0;
   z-index: 999999;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.context-menu-layer--open {
+  visibility: visible;
   pointer-events: auto;
 }
 
 .context-menu-shell {
   position: fixed;
   outline: none;
+}
+
+.context-menu-shell--hidden {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 :global(.context-menu-anchor) {
