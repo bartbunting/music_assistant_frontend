@@ -9,12 +9,14 @@
         type="search"
         inputmode="search"
         enterkeyhint="search"
-        :label="$t('type_to_search')"
+        :label="$t('search')"
         hide-details
         variant="outlined"
         @focus="searchHasFocus = true"
         @blur="searchHasFocus = false"
-      />
+      >
+        <template #label>{{ $t("type_to_search") }}</template>
+      </v-text-field>
 
       <fieldset class="search-type-group">
         <legend class="sr-only">{{ $t("search") }}</legend>
