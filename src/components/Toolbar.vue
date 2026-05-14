@@ -73,6 +73,7 @@
           v-model="overflowMenuOpen"
           location="bottom end"
           scrim
+          attach=".v-application"
           content-class="voiceover-options-menu"
           :content-props="optionsMenuContentProps"
           :close-on-content-click="false"
