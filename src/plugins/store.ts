@@ -34,7 +34,6 @@ interface Store {
   apiInitialized: boolean;
   apiBaseUrl: string;
   dialogActive: boolean;
-  contextMenuActive: boolean;
   activePlayer?: Player;
   activePlayerQueue?: PlayerQueue;
   curQueueItem?: QueueItem;
@@ -74,7 +73,6 @@ export const store: Store = reactive({
   apiInitialized: false,
   apiBaseUrl: "",
   dialogActive: false,
-  contextMenuActive: false,
   activePlayer: computed(() => {
     if (store.activePlayerId && store.activePlayerId in api.players) {
       return api.players[store.activePlayerId];

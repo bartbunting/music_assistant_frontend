@@ -1,8 +1,5 @@
 <template>
   <v-toolbar :color="color" class="header">
-    <span class="sr-only" role="status" aria-live="assertive">
-      {{ overflowMenuAnnouncement }}
-    </span>
     <template v-if="icon" #prepend>
       <v-btn
         :icon="typeof icon === 'string' ? icon : undefined"
@@ -93,13 +90,11 @@
         <div
           :id="overflowMenuContentId"
           ref="overflowMenuShellRef"
-          class="toolbar-overflow-menu voiceover-options-menu"
+          class="toolbar-overflow-menu"
           :class="{ 'toolbar-overflow-menu--open': overflowMenuOpen }"
           role="menu"
           :aria-label="overflowMenuLabel"
-          :aria-describedby="overflowMenuDebugId"
           :aria-hidden="overflowMenuOpen ? undefined : 'true'"
-          data-vo-debug-marker="ma-toolbar-options-menu-2026-05-14"
           :style="overflowMenuPositionStyle"
           @click.stop
           @keydown.esc.stop.prevent="overflowMenuOpen = false"
@@ -109,9 +104,6 @@
             class="options-menu-panel"
             tabindex="-1"
           >
-            <span :id="overflowMenuDebugId" class="sr-only">
-              {{ overflowMenuDebugText }}
-            </span>
             <v-list
               density="compact"
               slim
@@ -172,6 +164,12 @@
             </v-list>
           </div>
         </div>
+        <div
+          class="toolbar-overflow-backdrop"
+          :class="{ 'toolbar-overflow-backdrop--open': overflowMenuOpen }"
+          aria-hidden="true"
+          @click="overflowMenuOpen = false"
+        ></div>
       </div>
     </template>
   </v-toolbar>
@@ -196,17 +194,12 @@ const overflowMenuOpen = ref(false);
 const overflowMenuShellRef = ref<HTMLElement | null>(null);
 const overflowMenuContentRef = ref<HTMLElement | null>(null);
 const overflowMenuActivator = ref<HTMLElement | null>(null);
-const overflowMenuAnnouncement = ref("");
 const overflowMenuLeft = ref(TOOLBAR_OVERFLOW_MENU_MARGIN);
 const overflowMenuTop = ref(TOOLBAR_OVERFLOW_MENU_MARGIN);
 const { t } = useI18n();
 const overflowMenuBaseId = useId();
 const overflowMenuContentId = `toolbar-overflow-menu-${overflowMenuBaseId}`;
-const overflowMenuDebugId = `toolbar-overflow-menu-debug-${overflowMenuBaseId}`;
-const overflowMenuDebugText = "MA toolbar options menu test";
-const overflowMenuLabel = computed(
-  () => `${t("more_options")} ${overflowMenuDebugText}`,
-);
+const overflowMenuLabel = computed(() => t("more_options"));
 const overflowMenuButtonLabel = computed(() => overflowMenuLabel.value);
 const overflowMenuPositionStyle = computed(() => ({
   left: `${overflowMenuLeft.value}px`,
@@ -297,15 +290,6 @@ const toggleOverflowMenu = (event: MouseEvent | KeyboardEvent) => {
   openOverflowMenu(event);
 };
 
-const announceOverflowMenuOpen = () => {
-  overflowMenuAnnouncement.value = "";
-  nextTick(() => {
-    if (overflowMenuOpen.value) {
-      overflowMenuAnnouncement.value = overflowMenuDebugText;
-    }
-  });
-};
-
 const onOverflowMenuOutsidePointerDown = (event: PointerEvent) => {
   const target = event.target;
   if (!(target instanceof Node)) return;
@@ -352,14 +336,12 @@ const removeOverflowMenuListeners = () => {
 watch(overflowMenuOpen, (open) => {
   if (open) {
     addOverflowMenuListeners();
-    announceOverflowMenuOpen();
     nextTick(() => updateOverflowMenuPosition());
     focusOverflowMenu();
     return;
   }
 
   removeOverflowMenuListeners();
-  overflowMenuAnnouncement.value = "";
   if (overflowMenuActivator.value?.isConnected) {
     overflowMenuActivator.value.focus({ preventScroll: true });
   }
@@ -477,10 +459,6 @@ export interface ToolBarMenuItem extends ContextMenuItem {
   margin-inline-end: 10px;
 }
 
-:global(.voiceover-options-menu) {
-  contain: none !important;
-}
-
 .toolbar-overflow-menu {
   position: fixed;
   z-index: 999999;
@@ -501,6 +479,21 @@ export interface ToolBarMenuItem extends ContextMenuItem {
 .toolbar-overflow-menu--open {
   visibility: visible;
   pointer-events: auto;
+}
+
+.toolbar-overflow-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999998;
+  pointer-events: none;
+  background: #000;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.toolbar-overflow-backdrop--open {
+  pointer-events: auto;
+  opacity: 0.32;
 }
 
 .toolbar-overflow-menu :deep(.v-list) {
