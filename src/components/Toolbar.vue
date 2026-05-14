@@ -1,5 +1,8 @@
 <template>
   <v-toolbar :color="color" class="header">
+    <span class="sr-only" role="status" aria-live="assertive">
+      {{ overflowMenuAnnouncement }}
+    </span>
     <template v-if="icon" #prepend>
       <v-btn
         :icon="typeof icon === 'string' ? icon : undefined"
@@ -77,13 +80,15 @@
           content-class="voiceover-options-menu"
           :content-props="optionsMenuContentProps"
           :close-on-content-click="false"
+          eager
         >
           <template #activator="{ props }">
             <v-btn
               variant="plain"
               style="width: 15px; margin-left: -10px"
               v-bind="props"
-              :aria-label="$t('more_options')"
+              :aria-label="overflowMenuButtonLabel"
+              :aria-controls="overflowMenuContentId"
               aria-haspopup="menu"
               :aria-expanded="overflowMenuOpen ? 'true' : 'false'"
               @click="rememberOverflowMenuActivator"
@@ -102,6 +107,9 @@
             tabindex="-1"
             @keydown.esc.stop.prevent="overflowMenuOpen = false"
           >
+            <span :id="overflowMenuDebugId" class="sr-only">
+              {{ overflowMenuDebugText }}
+            </span>
             <v-list
               density="compact"
               slim
@@ -118,7 +126,7 @@
                 type="button"
                 class="toolbar-menu-button"
                 data-menu-action
-                role="button"
+                role="menuitem"
                 :tabindex="menuItem.disabled == true ? -1 : 0"
                 :title="$t(menuItem.label, menuItem.labelArgs || [])"
                 :disabled="menuItem.disabled == true"
@@ -175,17 +183,27 @@ import { store } from "@/plugins/store";
 import { getBreakpointValue } from "../plugins/breakpoint";
 
 import type { Component } from "vue";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, useId, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
 const overflowMenuOpen = ref(false);
 const overflowMenuContentRef = ref<HTMLElement | null>(null);
 const overflowMenuActivator = ref<HTMLElement | null>(null);
+const overflowMenuAnnouncement = ref("");
 const { t } = useI18n();
+const overflowMenuBaseId = useId();
+const overflowMenuContentId = `toolbar-overflow-menu-${overflowMenuBaseId}`;
+const overflowMenuDebugId = `toolbar-overflow-menu-debug-${overflowMenuBaseId}`;
+const overflowMenuDebugText = "MA toolbar options menu test";
+const overflowMenuButtonLabel = computed(
+  () => `${t("more_options")} ${overflowMenuDebugText}`,
+);
 const optionsMenuContentProps = computed(() => ({
-  role: "dialog",
-  "aria-modal": "true",
-  "aria-label": t("more_options"),
+  id: overflowMenuContentId,
+  role: "menu",
+  "aria-label": `${t("more_options")} ${overflowMenuDebugText}`,
+  "aria-describedby": overflowMenuDebugId,
+  "data-vo-debug-marker": "ma-toolbar-options-menu-2026-05-14",
 }));
 
 const focusOverflowMenu = (attempts = 5) => {
@@ -223,12 +241,23 @@ const rememberOverflowMenuActivator = () => {
   }
 };
 
+const announceOverflowMenuOpen = () => {
+  overflowMenuAnnouncement.value = "";
+  nextTick(() => {
+    if (overflowMenuOpen.value) {
+      overflowMenuAnnouncement.value = overflowMenuDebugText;
+    }
+  });
+};
+
 watch(overflowMenuOpen, (open) => {
   if (open) {
+    announceOverflowMenuOpen();
     focusOverflowMenu();
     return;
   }
 
+  overflowMenuAnnouncement.value = "";
   if (overflowMenuActivator.value?.isConnected) {
     overflowMenuActivator.value.focus({ preventScroll: true });
   }
