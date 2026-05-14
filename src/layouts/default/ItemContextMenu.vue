@@ -13,7 +13,7 @@
     >
       <div
         class="context-menu-shell voiceover-options-menu"
-        role="dialog"
+        role="menu"
         tabindex="-1"
         :aria-label="$t('more_options')"
         :style="menuPositionStyle"
@@ -41,7 +41,7 @@
                   type="button"
                   class="context-menu-button"
                   data-menu-action
-                  role="button"
+                  role="menuitem"
                   tabindex="0"
                   aria-haspopup="menu"
                   append-icon="mdi-chevron-right"
@@ -82,7 +82,7 @@
                   class="context-menu-button"
                   variant="text"
                   data-menu-action
-                  role="button"
+                  role="menuitem"
                   :tabindex="menuItem.disabled == true ? -1 : 0"
                   :title="$t(menuItem.label, menuItem.labelArgs || [])"
                   :disabled="menuItem.disabled == true"
@@ -131,7 +131,7 @@
       <div
         v-if="showSubmenu"
         class="context-menu-shell voiceover-options-menu"
-        role="dialog"
+        role="menu"
         tabindex="-1"
         :aria-label="$t('more_options')"
         :style="subMenuPositionStyle"
@@ -164,7 +164,7 @@
                   class="context-menu-button"
                   variant="text"
                   data-menu-action
-                  role="button"
+                  role="menuitem"
                   :tabindex="subMenuItem.disabled == true ? -1 : 0"
                   :title="$t(subMenuItem.label, subMenuItem.labelArgs || [])"
                   :disabled="subMenuItem.disabled == true"
