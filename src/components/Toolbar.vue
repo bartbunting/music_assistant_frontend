@@ -72,39 +72,42 @@
           ).length
         "
       >
-        <v-menu
-          v-model="overflowMenuOpen"
-          location="bottom end"
-          attach=".v-application"
-          content-class="voiceover-options-menu"
-          :content-props="optionsMenuContentProps"
-          :close-on-content-click="false"
-          eager
+        <v-btn
+          variant="plain"
+          style="width: 15px; margin-left: -10px"
+          :aria-label="overflowMenuButtonLabel"
+          :aria-controls="overflowMenuContentId"
+          aria-haspopup="menu"
+          :aria-expanded="overflowMenuOpen ? 'true' : 'false'"
+          @click.stop="toggleOverflowMenu"
+          @keydown.down.prevent.stop="openOverflowMenu"
+          @keydown.up.prevent.stop="openOverflowMenu"
         >
-          <template #activator="{ props }">
-            <v-btn
-              variant="plain"
-              style="width: 15px; margin-left: -10px"
-              v-bind="props"
-              :aria-label="overflowMenuButtonLabel"
-              :aria-controls="overflowMenuContentId"
-              aria-haspopup="menu"
-              :aria-expanded="overflowMenuOpen ? 'true' : 'false'"
-              @click="rememberOverflowMenuActivator"
-            >
-              <v-icon
-                icon="mdi-dots-vertical"
-                :color="$vuetify.theme.current.dark ? '#fff' : '#000'"
-                size="22"
-                style="margin-right: -5px; width: 15px"
-              />
-            </v-btn>
-          </template>
+          <v-icon
+            icon="mdi-dots-vertical"
+            :color="$vuetify.theme.current.dark ? '#fff' : '#000'"
+            size="22"
+            style="margin-right: -5px; width: 15px"
+          />
+        </v-btn>
+        <div
+          :id="overflowMenuContentId"
+          ref="overflowMenuShellRef"
+          class="toolbar-overflow-menu voiceover-options-menu"
+          :class="{ 'toolbar-overflow-menu--open': overflowMenuOpen }"
+          role="menu"
+          :aria-label="overflowMenuLabel"
+          :aria-describedby="overflowMenuDebugId"
+          :aria-hidden="overflowMenuOpen ? undefined : 'true'"
+          data-vo-debug-marker="ma-toolbar-options-menu-2026-05-14"
+          :style="overflowMenuPositionStyle"
+          @click.stop
+          @keydown.esc.stop.prevent="overflowMenuOpen = false"
+        >
           <div
             ref="overflowMenuContentRef"
             class="options-menu-panel"
             tabindex="-1"
-            @keydown.esc.stop.prevent="overflowMenuOpen = false"
           >
             <span :id="overflowMenuDebugId" class="sr-only">
               {{ overflowMenuDebugText }}
@@ -168,7 +171,7 @@
               </v-list-item>
             </v-list>
           </div>
-        </v-menu>
+        </div>
       </div>
     </template>
   </v-toolbar>
@@ -182,28 +185,59 @@ import { store } from "@/plugins/store";
 import { getBreakpointValue } from "../plugins/breakpoint";
 
 import type { Component } from "vue";
-import { computed, nextTick, ref, useId, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
+const TOOLBAR_OVERFLOW_MENU_MARGIN = 8;
+const TOOLBAR_OVERFLOW_MENU_MIN_WIDTH = 220;
+const TOOLBAR_OVERFLOW_MENU_OFFSET = 4;
+
 const overflowMenuOpen = ref(false);
+const overflowMenuShellRef = ref<HTMLElement | null>(null);
 const overflowMenuContentRef = ref<HTMLElement | null>(null);
 const overflowMenuActivator = ref<HTMLElement | null>(null);
 const overflowMenuAnnouncement = ref("");
+const overflowMenuLeft = ref(TOOLBAR_OVERFLOW_MENU_MARGIN);
+const overflowMenuTop = ref(TOOLBAR_OVERFLOW_MENU_MARGIN);
 const { t } = useI18n();
 const overflowMenuBaseId = useId();
 const overflowMenuContentId = `toolbar-overflow-menu-${overflowMenuBaseId}`;
 const overflowMenuDebugId = `toolbar-overflow-menu-debug-${overflowMenuBaseId}`;
 const overflowMenuDebugText = "MA toolbar options menu test";
-const overflowMenuButtonLabel = computed(
+const overflowMenuLabel = computed(
   () => `${t("more_options")} ${overflowMenuDebugText}`,
 );
-const optionsMenuContentProps = computed(() => ({
-  id: overflowMenuContentId,
-  role: "menu",
-  "aria-label": `${t("more_options")} ${overflowMenuDebugText}`,
-  "aria-describedby": overflowMenuDebugId,
-  "data-vo-debug-marker": "ma-toolbar-options-menu-2026-05-14",
+const overflowMenuButtonLabel = computed(() => overflowMenuLabel.value);
+const overflowMenuPositionStyle = computed(() => ({
+  left: `${overflowMenuLeft.value}px`,
+  top: `${overflowMenuTop.value}px`,
 }));
+
+function updateOverflowMenuPosition(activator = overflowMenuActivator.value) {
+  if (!activator || typeof window === "undefined") return;
+
+  const rect = activator.getBoundingClientRect();
+  const menuEl = overflowMenuShellRef.value;
+  const menuWidth = menuEl?.offsetWidth || TOOLBAR_OVERFLOW_MENU_MIN_WIDTH;
+  const menuHeight = menuEl?.offsetHeight || 0;
+  const maxLeft = Math.max(
+    TOOLBAR_OVERFLOW_MENU_MARGIN,
+    window.innerWidth - menuWidth - TOOLBAR_OVERFLOW_MENU_MARGIN,
+  );
+  const maxTop = Math.max(
+    TOOLBAR_OVERFLOW_MENU_MARGIN,
+    window.innerHeight - menuHeight - TOOLBAR_OVERFLOW_MENU_MARGIN,
+  );
+
+  overflowMenuLeft.value = Math.max(
+    TOOLBAR_OVERFLOW_MENU_MARGIN,
+    Math.min(rect.right - menuWidth, maxLeft),
+  );
+  overflowMenuTop.value = Math.max(
+    TOOLBAR_OVERFLOW_MENU_MARGIN,
+    Math.min(rect.bottom + TOOLBAR_OVERFLOW_MENU_OFFSET, maxTop),
+  );
+}
 
 const focusOverflowMenu = (attempts = 5) => {
   nextTick(() => {
@@ -234,10 +268,33 @@ const focusOverflowMenu = (attempts = 5) => {
   });
 };
 
-const rememberOverflowMenuActivator = () => {
-  if (document.activeElement instanceof HTMLElement) {
-    overflowMenuActivator.value = document.activeElement;
+const getEventElement = (event: MouseEvent | KeyboardEvent) => {
+  return event.currentTarget instanceof HTMLElement
+    ? event.currentTarget
+    : null;
+};
+
+const openOverflowMenu = (event?: MouseEvent | KeyboardEvent) => {
+  event?.preventDefault();
+  const activator = event
+    ? getEventElement(event)
+    : overflowMenuActivator.value;
+  if (activator) {
+    overflowMenuActivator.value = activator;
   }
+
+  updateOverflowMenuPosition();
+  overflowMenuOpen.value = true;
+};
+
+const toggleOverflowMenu = (event: MouseEvent | KeyboardEvent) => {
+  event.preventDefault();
+  if (overflowMenuOpen.value) {
+    overflowMenuOpen.value = false;
+    return;
+  }
+
+  openOverflowMenu(event);
 };
 
 const announceOverflowMenuOpen = () => {
@@ -249,19 +306,67 @@ const announceOverflowMenuOpen = () => {
   });
 };
 
+const onOverflowMenuOutsidePointerDown = (event: PointerEvent) => {
+  const target = event.target;
+  if (!(target instanceof Node)) return;
+  if (overflowMenuShellRef.value?.contains(target)) return;
+  if (overflowMenuActivator.value?.contains(target)) return;
+
+  overflowMenuOpen.value = false;
+};
+
+const onOverflowMenuWindowChange = () => {
+  if (overflowMenuOpen.value) {
+    updateOverflowMenuPosition();
+  }
+};
+
+const addOverflowMenuListeners = () => {
+  if (typeof document === "undefined" || typeof window === "undefined") {
+    return;
+  }
+
+  document.addEventListener(
+    "pointerdown",
+    onOverflowMenuOutsidePointerDown,
+    true,
+  );
+  window.addEventListener("resize", onOverflowMenuWindowChange);
+  window.addEventListener("scroll", onOverflowMenuWindowChange, true);
+};
+
+const removeOverflowMenuListeners = () => {
+  if (typeof document === "undefined" || typeof window === "undefined") {
+    return;
+  }
+
+  document.removeEventListener(
+    "pointerdown",
+    onOverflowMenuOutsidePointerDown,
+    true,
+  );
+  window.removeEventListener("resize", onOverflowMenuWindowChange);
+  window.removeEventListener("scroll", onOverflowMenuWindowChange, true);
+};
+
 watch(overflowMenuOpen, (open) => {
   if (open) {
+    addOverflowMenuListeners();
     announceOverflowMenuOpen();
+    nextTick(() => updateOverflowMenuPosition());
     focusOverflowMenu();
     return;
   }
 
+  removeOverflowMenuListeners();
   overflowMenuAnnouncement.value = "";
   if (overflowMenuActivator.value?.isConnected) {
     overflowMenuActivator.value.focus({ preventScroll: true });
   }
   overflowMenuActivator.value = null;
 });
+
+onBeforeUnmount(removeOverflowMenuListeners);
 
 const onMenuItemClick = (
   event: MouseEvent | KeyboardEvent,
@@ -374,6 +479,33 @@ export interface ToolBarMenuItem extends ContextMenuItem {
 
 :global(.voiceover-options-menu) {
   contain: none !important;
+}
+
+.toolbar-overflow-menu {
+  position: fixed;
+  z-index: 999999;
+  min-width: 220px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  visibility: hidden;
+  pointer-events: none;
+  background: rgb(var(--v-theme-surface));
+  border-radius: 4px;
+  box-shadow:
+    0px 5px 5px -3px var(--v-shadow-key-umbra-opacity, rgba(0, 0, 0, 0.2)),
+    0px 8px 10px 1px var(--v-shadow-key-penumbra-opacity, rgba(0, 0, 0, 0.14)),
+    0px 3px 14px 2px var(--v-shadow-key-ambient-opacity, rgba(0, 0, 0, 0.12));
+}
+
+.toolbar-overflow-menu--open {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.toolbar-overflow-menu :deep(.v-list) {
+  background: rgb(var(--v-theme-surface));
+  border-radius: inherit;
 }
 
 .toolbar-menu-button {
