@@ -12,6 +12,7 @@
       @click.self="closeMenus"
     >
       <div
+        id="global-context-menu"
         class="context-menu-shell voiceover-options-menu"
         role="menu"
         tabindex="-1"
@@ -130,6 +131,7 @@
       <!-- submenu -->
       <div
         v-if="showSubmenu"
+        id="global-context-submenu"
         class="context-menu-shell voiceover-options-menu"
         role="menu"
         tabindex="-1"
@@ -232,6 +234,11 @@ const subMenuContentRef = ref<HTMLElement | null>(null);
 const menuOpener = ref<HTMLElement | null>(null);
 const menuTeleportTarget = ref<string | HTMLElement>(".v-application");
 const menuTeleportAnchor = ref<HTMLElement | null>(null);
+const openerAriaState = ref<{
+  element: HTMLElement;
+  controls: string | null;
+  expanded: string | null;
+} | null>(null);
 const VIEWPORT_MARGIN = 8;
 const MENU_MAX_HEIGHT = 450;
 
@@ -320,6 +327,40 @@ function restoreMenuOpener() {
     menuOpener.value.focus({ preventScroll: true });
     menuOpener.value = null;
   }
+}
+
+function setOpenerMenuState(opener: HTMLElement | null) {
+  restoreOpenerMenuState();
+  if (!opener?.isConnected) return;
+
+  openerAriaState.value = {
+    element: opener,
+    controls: opener.getAttribute("aria-controls"),
+    expanded: opener.getAttribute("aria-expanded"),
+  };
+  opener.setAttribute("aria-controls", "global-context-menu");
+  opener.setAttribute("aria-expanded", "true");
+}
+
+function restoreOpenerMenuState() {
+  const state = openerAriaState.value;
+  if (!state) return;
+
+  if (state.element.isConnected) {
+    if (state.controls == null) {
+      state.element.removeAttribute("aria-controls");
+    } else {
+      state.element.setAttribute("aria-controls", state.controls);
+    }
+
+    if (state.expanded == null) {
+      state.element.removeAttribute("aria-expanded");
+    } else {
+      state.element.setAttribute("aria-expanded", state.expanded);
+    }
+  }
+
+  openerAriaState.value = null;
 }
 
 function getMenuPositionStyle(x: number, y: number, minWidth: number) {
@@ -443,6 +484,7 @@ function resetMenuTeleportTarget() {
 function resetMenuState() {
   showSubmenu.value = false;
   show.value = false;
+  restoreOpenerMenuState();
   resetMenuTeleportTarget();
   store.dialogActive = false;
 }
@@ -456,6 +498,7 @@ watch(show, (open) => {
     queueMenuFocus(() => (show.value ? menuContentRef.value : null));
   } else {
     restoreMenuOpener();
+    restoreOpenerMenuState();
     resetMenuTeleportTarget();
   }
 });
@@ -478,6 +521,7 @@ onMounted(() => {
   eventbus.on("contextmenu", async (evt: ContextMenuDialogEvent) => {
     const opener = getContextMenuOpener(evt);
     rememberMenuOpener(opener);
+    setOpenerMenuState(opener);
     setMenuTeleportTarget(evt, opener);
     items.value = evt.items;
     posX.value = evt.posX || 0;
@@ -489,6 +533,7 @@ onMounted(() => {
   });
   onBeforeUnmount(() => {
     store.contextMenuActive = false;
+    restoreOpenerMenuState();
     eventbus.off("contextmenu");
   });
 });

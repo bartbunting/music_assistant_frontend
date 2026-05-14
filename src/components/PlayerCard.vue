@@ -221,6 +221,7 @@
           class="player-command-btn"
           style="margin-right: -5px"
           :aria-label="menuButtonLabel"
+          aria-haspopup="menu"
           @click.stop="openPlayerMenu"
         >
           <MoreVertical
