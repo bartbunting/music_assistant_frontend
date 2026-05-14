@@ -6,16 +6,9 @@
       :class="{ 'on-hover': isHovering, unavailable: !isAvailable }"
       elevation="0"
       :disabled="disabled"
-      @click.prevent="onClick"
+      @click="onClick"
       @click.right.prevent="onMenu"
     >
-      <a
-        v-if="itemHref"
-        class="panel-item-link"
-        :href="itemHref"
-        :aria-label="displayName"
-        @click.prevent.stop="onClick"
-      ></a>
       <v-overlay
         v-if="showCheckboxes"
         :model-value="showCheckboxes"
@@ -138,7 +131,6 @@ import {
   getArtistsString,
   getBrowseFolderName,
   getGenreDisplayName,
-  getMediaItemHref,
   handleMediaItemClick,
   handleMenuBtnClick,
   handlePlayBtnClick,
@@ -180,7 +172,6 @@ const compProps = withDefaults(defineProps<Props>(), {
   disablePlayButton: false,
   parentItem: undefined,
   sortBy: undefined,
-  disabled: false,
 });
 
 const { t, te } = useI18n();
@@ -196,11 +187,6 @@ const displayName = computed(() => {
   return compProps.item.name;
 });
 const playButtonLabel = computed(() => `${t("play")} ${displayName.value}`);
-const itemHref = computed(() =>
-  compProps.showCheckboxes || compProps.disabled
-    ? undefined
-    : getMediaItemHref(compProps.item),
-);
 
 // emits
 const emit = defineEmits<{
@@ -221,7 +207,7 @@ const onMenu = function (evt: PointerEvent | TouchEvent) {
   );
 };
 
-const onClick = function (evt: MouseEvent) {
+const onClick = function (evt: PointerEvent) {
   if (compProps.showCheckboxes) {
     emit("select", compProps.item, compProps.isSelected ? false : true);
     return;
@@ -265,25 +251,16 @@ const onPlayClick = function (evt: PointerEvent) {
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  z-index: 2;
 
   .v-btn {
     pointer-events: all;
   }
 }
 .v-card {
-  position: relative;
   background-color: rgb(var(--v-theme-panel));
   transition: opacity 0.4s ease-in-out;
   border-radius: 3px;
   padding: 10px;
-}
-
-.panel-item-link {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  border-radius: inherit;
 }
 
 @media (max-width: 575px) {

@@ -29,7 +29,6 @@ import { webPlayer } from "@/plugins/web_player";
 import Color from "color";
 import { getPaletteSync } from "colorthief";
 import { Volume, Volume1, Volume2, VolumeX } from "lucide-vue-next";
-import type { RouteLocationRaw } from "vue-router";
 
 export const openLinkInNewTab = function (url: string) {
   if (!url) return url;
@@ -857,38 +856,6 @@ export const handlePlayBtnClick = function (
 };
 
 /* Handle media item click */
-export const getMediaItemRoute = function (
-  item: MediaItemTypeOrItemMapping,
-): RouteLocationRaw | undefined {
-  if (!itemIsAvailable(item) || item.media_type == MediaType.PODCAST_EPISODE) {
-    return undefined;
-  }
-
-  if (item.media_type == MediaType.FOLDER) {
-    return {
-      name: "browse",
-      query: {
-        path: (item as BrowseFolder).path,
-      },
-    };
-  }
-
-  return {
-    name: item.media_type,
-    params: {
-      itemId: item.item_id,
-      provider: item.provider,
-    },
-  };
-};
-
-export const getMediaItemHref = function (
-  item: MediaItemTypeOrItemMapping,
-): string | undefined {
-  const route = getMediaItemRoute(item);
-  return route ? router.resolve(route).href : undefined;
-};
-
 export const handleMediaItemClick = function (
   item: MediaItemTypeOrItemMapping,
   posX: number,
@@ -901,6 +868,17 @@ export const handleMediaItemClick = function (
     return;
   }
 
+  // folder items always open in browse view
+  if (item.media_type == MediaType.FOLDER) {
+    router.push({
+      name: "browse",
+      query: {
+        path: (item as BrowseFolder).path,
+      },
+    });
+    return;
+  }
+
   // podcast episode has no details view so show play menu directly
   // TODO: revisit this once we have a proper podcast episode details view
   if (item.media_type == MediaType.PODCAST_EPISODE) {
@@ -909,8 +887,13 @@ export const handleMediaItemClick = function (
   }
 
   // all other: go to details view
-  const route = getMediaItemRoute(item);
-  if (route) router.push(route);
+  router.push({
+    name: item.media_type,
+    params: {
+      itemId: item.item_id,
+      provider: item.provider,
+    },
+  });
 };
 
 /* Handle menu button click */
