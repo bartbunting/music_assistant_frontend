@@ -20,6 +20,7 @@ export type ContextMenuDialogEvent = {
   posX?: number;
   posY?: number;
   showPlayMenuHeader?: boolean;
+  sourceElement?: HTMLElement;
 };
 
 export type CreatePlaylistEvent = {

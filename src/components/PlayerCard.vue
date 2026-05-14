@@ -314,10 +314,20 @@ const playerQueue = computed(() => {
 });
 
 const openPlayerMenu = function (evt: Event) {
+  const sourceElement =
+    evt.currentTarget instanceof HTMLElement ? evt.currentTarget : undefined;
+  const rect = sourceElement?.getBoundingClientRect();
+  const pointerEvent = evt as PointerEvent;
+  const hasPointerPosition =
+    typeof pointerEvent.clientX === "number" &&
+    typeof pointerEvent.clientY === "number" &&
+    (pointerEvent.clientX !== 0 || pointerEvent.clientY !== 0);
+
   eventbus.emit("contextmenu", {
     items: getPlayerMenuItems(compProps.player, playerQueue.value),
-    posX: (evt as PointerEvent).clientX,
-    posY: (evt as PointerEvent).clientY,
+    posX: hasPointerPosition ? pointerEvent.clientX : rect?.right,
+    posY: hasPointerPosition ? pointerEvent.clientY : rect?.top,
+    sourceElement,
   });
 };
 

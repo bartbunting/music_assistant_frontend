@@ -4,8 +4,13 @@
   we steer its visibility through the centralized eventbus.
 -->
 <template>
-  <Teleport to=".v-application">
-    <div v-if="show" class="context-menu-layer" @click.self="closeMenus">
+  <Teleport :to="menuTeleportTarget">
+    <div
+      v-if="show"
+      class="context-menu-layer"
+      :class="{ 'context-menu-layer--panel': menuTeleportedToPlayerPanel }"
+      @click.self="closeMenus"
+    >
       <div
         class="context-menu-shell voiceover-options-menu"
         role="dialog"
@@ -225,6 +230,7 @@ const subMenuPosY = ref(0);
 const menuContentRef = ref<HTMLElement | null>(null);
 const subMenuContentRef = ref<HTMLElement | null>(null);
 const menuOpener = ref<HTMLElement | null>(null);
+const menuTeleportTarget = ref<string | HTMLElement>(".v-application");
 const VIEWPORT_MARGIN = 8;
 const MENU_MAX_HEIGHT = 450;
 
@@ -233,6 +239,11 @@ const menuPositionStyle = computed(() =>
 );
 const subMenuPositionStyle = computed(() =>
   getMenuPositionStyle(subMenuPosX.value, subMenuPosY.value, 260),
+);
+const menuTeleportedToPlayerPanel = computed(
+  () =>
+    menuTeleportTarget.value instanceof HTMLElement &&
+    menuTeleportTarget.value.id === "player-panel",
 );
 
 const focusableMenuItemSelector = [
@@ -291,7 +302,12 @@ function queueMenuFocus(
   });
 }
 
-function rememberMenuOpener() {
+function rememberMenuOpener(opener: HTMLElement | null) {
+  if (opener?.isConnected) {
+    menuOpener.value = opener;
+    return;
+  }
+
   const activeElement = document.activeElement;
   if (activeElement instanceof HTMLElement) {
     menuOpener.value = activeElement;
@@ -313,25 +329,94 @@ function getMenuPositionStyle(x: number, y: number, minWidth: number) {
     };
   }
 
-  const left = Math.max(
-    VIEWPORT_MARGIN,
-    Math.min(x, window.innerWidth - minWidth - VIEWPORT_MARGIN),
+  const containerRect =
+    menuTeleportTarget.value instanceof HTMLElement
+      ? menuTeleportTarget.value.getBoundingClientRect()
+      : null;
+  const containerLeft = containerRect?.left ?? 0;
+  const containerTop = containerRect?.top ?? 0;
+  const containerWidth = containerRect?.width ?? window.innerWidth;
+  const containerHeight = containerRect?.height ?? window.innerHeight;
+
+  const minLeft = containerLeft + VIEWPORT_MARGIN;
+  const maxLeft = Math.max(
+    minLeft,
+    containerLeft + containerWidth - minWidth - VIEWPORT_MARGIN,
   );
-  const top = Math.max(
-    VIEWPORT_MARGIN,
-    Math.min(y, window.innerHeight - MENU_MAX_HEIGHT - VIEWPORT_MARGIN),
+  const minTop = containerTop + VIEWPORT_MARGIN;
+  const maxTop = Math.max(
+    minTop,
+    containerTop + containerHeight - MENU_MAX_HEIGHT - VIEWPORT_MARGIN,
   );
 
+  const left = Math.max(minLeft, Math.min(x, maxLeft));
+  const top = Math.max(minTop, Math.min(y, maxTop));
+
   return {
-    left: `${left}px`,
-    top: `${top}px`,
+    left: `${left - containerLeft}px`,
+    top: `${top - containerTop}px`,
   };
 }
 
-function closeMenus() {
+function getContextMenuOpener(evt: ContextMenuDialogEvent) {
+  if (evt.sourceElement?.isConnected) {
+    return evt.sourceElement;
+  }
+
+  const activeElement = document.activeElement;
+  if (activeElement instanceof HTMLElement) {
+    return activeElement;
+  }
+
+  return getContextMenuPointElement(evt);
+}
+
+function getContextMenuPointElement(evt: ContextMenuDialogEvent) {
+  if (
+    typeof evt.posX !== "number" ||
+    typeof evt.posY !== "number" ||
+    typeof document === "undefined"
+  ) {
+    return null;
+  }
+
+  const element = document.elementFromPoint(evt.posX, evt.posY);
+  return element instanceof HTMLElement ? element : null;
+}
+
+function getContextMenuTeleportTarget(
+  evt: ContextMenuDialogEvent,
+  opener: HTMLElement | null,
+) {
+  const playerPanel = document.getElementById("player-panel");
+  if (!playerPanel || !store.showPlayersMenu) {
+    return ".v-application";
+  }
+
+  const pointElement = getContextMenuPointElement(evt);
+  if (
+    (opener && playerPanel.contains(opener)) ||
+    (pointElement && playerPanel.contains(pointElement))
+  ) {
+    return playerPanel;
+  }
+
+  return ".v-application";
+}
+
+function resetMenuTeleportTarget() {
+  menuTeleportTarget.value = ".v-application";
+}
+
+function resetMenuState() {
   showSubmenu.value = false;
   show.value = false;
+  resetMenuTeleportTarget();
   store.dialogActive = false;
+}
+
+function closeMenus() {
+  resetMenuState();
 }
 
 watch(show, (open) => {
@@ -339,6 +424,7 @@ watch(show, (open) => {
     queueMenuFocus(() => (show.value ? menuContentRef.value : null));
   } else {
     restoreMenuOpener();
+    resetMenuTeleportTarget();
   }
 });
 
@@ -358,7 +444,9 @@ watch([show, showSubmenu], ([menuOpen, submenuOpen]) => {
 
 onMounted(() => {
   eventbus.on("contextmenu", async (evt: ContextMenuDialogEvent) => {
-    rememberMenuOpener();
+    const opener = getContextMenuOpener(evt);
+    rememberMenuOpener(opener);
+    menuTeleportTarget.value = getContextMenuTeleportTarget(evt, opener);
     items.value = evt.items;
     posX.value = evt.posX || 0;
     posY.value = evt.posY || 0;
@@ -408,8 +496,7 @@ const menuItemClicked = function (
   if (menuItem.close_on_click == false) {
     return;
   }
-  show.value = false;
-  store.dialogActive = false;
+  resetMenuState();
 };
 
 const playMenuHeaderClicked = function (evt: MouseEvent | KeyboardEvent) {
@@ -1465,6 +1552,11 @@ const radioModeSupported = function (item: MediaItemTypeOrItemMapping) {
 .context-menu-shell {
   position: fixed;
   outline: none;
+}
+
+.context-menu-layer--panel,
+.context-menu-layer--panel .context-menu-shell {
+  position: absolute;
 }
 
 .context-menu-button {
