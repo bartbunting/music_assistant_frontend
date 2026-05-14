@@ -35,6 +35,11 @@ html {
   overflow: hidden;
 }
 
+.v-overlay-container:has(.voiceover-options-menu) {
+  contain: none !important;
+  display: block !important;
+}
+
 * {
   -webkit-user-drag: none;
   /* iOS Safari */
