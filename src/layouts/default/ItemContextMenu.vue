@@ -231,6 +231,7 @@ const menuContentRef = ref<HTMLElement | null>(null);
 const subMenuContentRef = ref<HTMLElement | null>(null);
 const menuOpener = ref<HTMLElement | null>(null);
 const menuTeleportTarget = ref<string | HTMLElement>(".v-application");
+const menuTeleportAnchor = ref<HTMLElement | null>(null);
 const VIEWPORT_MARGIN = 8;
 const MENU_MAX_HEIGHT = 450;
 
@@ -330,6 +331,7 @@ function getMenuPositionStyle(x: number, y: number, minWidth: number) {
   }
 
   const containerRect =
+    menuTeleportedToPlayerPanel.value &&
     menuTeleportTarget.value instanceof HTMLElement
       ? menuTeleportTarget.value.getBoundingClientRect()
       : null;
@@ -404,8 +406,38 @@ function getContextMenuTeleportTarget(
   return ".v-application";
 }
 
+function getInlineMenuTeleportTarget(evt: ContextMenuDialogEvent) {
+  const sourceElement = evt.sourceElement;
+  if (!sourceElement?.isConnected || !sourceElement.parentElement) {
+    return null;
+  }
+
+  const anchor = document.createElement("div");
+  anchor.className = "context-menu-anchor";
+  sourceElement.insertAdjacentElement("afterend", anchor);
+  menuTeleportAnchor.value = anchor;
+  return anchor;
+}
+
+function clearMenuTeleportAnchor() {
+  menuTeleportAnchor.value?.remove();
+  menuTeleportAnchor.value = null;
+}
+
+function setMenuTeleportTarget(
+  evt: ContextMenuDialogEvent,
+  opener: HTMLElement | null,
+) {
+  clearMenuTeleportAnchor();
+
+  const inlineTarget = getInlineMenuTeleportTarget(evt);
+  menuTeleportTarget.value =
+    inlineTarget || getContextMenuTeleportTarget(evt, opener);
+}
+
 function resetMenuTeleportTarget() {
   menuTeleportTarget.value = ".v-application";
+  clearMenuTeleportAnchor();
 }
 
 function resetMenuState() {
@@ -446,7 +478,7 @@ onMounted(() => {
   eventbus.on("contextmenu", async (evt: ContextMenuDialogEvent) => {
     const opener = getContextMenuOpener(evt);
     rememberMenuOpener(opener);
-    menuTeleportTarget.value = getContextMenuTeleportTarget(evt, opener);
+    setMenuTeleportTarget(evt, opener);
     items.value = evt.items;
     posX.value = evt.posX || 0;
     posY.value = evt.posY || 0;
@@ -1552,6 +1584,10 @@ const radioModeSupported = function (item: MediaItemTypeOrItemMapping) {
 .context-menu-shell {
   position: fixed;
   outline: none;
+}
+
+:global(.context-menu-anchor) {
+  display: contents;
 }
 
 .context-menu-layer--panel,
