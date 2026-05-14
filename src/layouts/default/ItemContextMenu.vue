@@ -4,175 +4,199 @@
   we steer its visibility through the centralized eventbus.
 -->
 <template>
-  <v-menu
-    v-model="show"
-    :target="[posX, posY]"
-    :scrim="TRANSPARENT_SCRIM"
-    attach=".v-application"
-    content-class="voiceover-options-menu"
-    :content-props="optionsMenuContentProps"
-    style="z-index: 999999"
-    z-index="999999"
-    @update:model-value="onMenuModelUpdate"
-  >
-    <v-card min-width="300" max-height="450" style="overflow-y: auto">
+  <Teleport to=".v-application">
+    <div v-if="show" class="context-menu-layer" @click.self="closeMenus">
       <div
-        ref="menuContentRef"
-        class="options-menu-panel"
+        class="context-menu-shell voiceover-options-menu"
+        role="dialog"
         tabindex="-1"
-        @keydown.esc.stop.prevent="closeMenus"
+        :aria-label="$t('more_options')"
+        :style="menuPositionStyle"
+        @click.stop
       >
-        <v-list density="compact" slim tile role="presentation" tabindex="-1">
-          <!-- play menu header -->
-          <div v-if="showPlayMenuHeader" class="menurow" role="none">
-            <v-list-item
-              link
-              tag="button"
-              type="button"
-              class="context-menu-button"
-              data-menu-action
-              role="button"
-              tabindex="0"
-              aria-haspopup="menu"
-              append-icon="mdi-chevron-right"
-              :title="$t('play_on')"
-              :subtitle="store.activePlayer?.name || $t('no_player')"
-              style="padding-left: 25px"
-              @click.stop="playMenuHeaderClicked"
-              @keydown.enter.prevent.stop="playMenuHeaderClicked"
-              @keydown.space.prevent.stop="playMenuHeaderClicked"
+        <v-card min-width="300" max-height="450" style="overflow-y: auto">
+          <div
+            ref="menuContentRef"
+            class="options-menu-panel"
+            tabindex="-1"
+            @keydown.esc.stop.prevent="closeMenus"
+          >
+            <v-list
+              density="compact"
+              slim
+              tile
+              role="presentation"
+              tabindex="-1"
             >
-              <template #prepend>
-                <v-icon
-                  size="40"
-                  style="margin-left: -8px"
-                  :icon="
-                    store.activePlayer ? store.activePlayer.icon : 'mdi-speaker'
+              <!-- play menu header -->
+              <div v-if="showPlayMenuHeader" class="menurow" role="none">
+                <v-list-item
+                  link
+                  tag="button"
+                  type="button"
+                  class="context-menu-button"
+                  data-menu-action
+                  role="button"
+                  tabindex="0"
+                  aria-haspopup="menu"
+                  append-icon="mdi-chevron-right"
+                  :title="$t('play_on')"
+                  :subtitle="store.activePlayer?.name || $t('no_player')"
+                  style="padding-left: 25px"
+                  @click.stop="playMenuHeaderClicked"
+                  @keydown.enter.prevent.stop="playMenuHeaderClicked"
+                  @keydown.space.prevent.stop="playMenuHeaderClicked"
+                >
+                  <template #prepend>
+                    <v-icon
+                      size="40"
+                      style="margin-left: -8px"
+                      :icon="
+                        store.activePlayer
+                          ? store.activePlayer.icon
+                          : 'mdi-speaker'
+                      "
+                    />
+                  </template>
+                </v-list-item>
+              </div>
+              <v-divider
+                v-if="showPlayMenuHeader"
+                style="margin-top: 5px; margin-bottom: 5px"
+              />
+              <div
+                v-for="menuItem of items.filter((x) => !x.hide)"
+                :key="menuItem.label"
+                class="menurow"
+                :class="{ 'menu-item-error': menuItem.color === 'error' }"
+                role="none"
+              >
+                <v-list-item
+                  tag="button"
+                  type="button"
+                  class="context-menu-button"
+                  variant="text"
+                  data-menu-action
+                  role="button"
+                  :tabindex="menuItem.disabled == true ? -1 : 0"
+                  :title="$t(menuItem.label, menuItem.labelArgs || [])"
+                  :disabled="menuItem.disabled == true"
+                  :aria-disabled="
+                    menuItem.disabled == true ? 'true' : undefined
                   "
-                />
-              </template>
-            </v-list-item>
+                  :aria-haspopup="
+                    menuItem.subItems?.length ? 'menu' : undefined
+                  "
+                  :prepend-icon="
+                    typeof menuItem.icon === 'string'
+                      ? menuItem.icon
+                      : undefined
+                  "
+                  :color="menuItem.color"
+                  border="bottom"
+                  :append-icon="
+                    menuItem.selected
+                      ? 'mdi-check'
+                      : menuItem.subItems?.length
+                        ? 'mdi-chevron-right'
+                        : undefined
+                  "
+                  style="padding-left: 25px"
+                  @click.stop="(e) => menuItemClicked(e, menuItem)"
+                  @keydown.enter.prevent.stop="
+                    (e: KeyboardEvent) => menuItemClicked(e, menuItem)
+                  "
+                  @keydown.space.prevent.stop="
+                    (e: KeyboardEvent) => menuItemClicked(e, menuItem)
+                  "
+                >
+                  <template
+                    v-if="menuItem.icon && typeof menuItem.icon !== 'string'"
+                    #prepend
+                  >
+                    <component :is="menuItem.icon" class="w-5 h-5" />
+                  </template>
+                </v-list-item>
+              </div>
+            </v-list>
           </div>
-          <v-divider
-            v-if="showPlayMenuHeader"
-            style="margin-top: 5px; margin-bottom: 5px"
-          />
-          <div
-            v-for="menuItem of items.filter((x) => !x.hide)"
-            :key="menuItem.label"
-            class="menurow"
-            :class="{ 'menu-item-error': menuItem.color === 'error' }"
-            role="none"
-          >
-            <v-list-item
-              tag="button"
-              type="button"
-              class="context-menu-button"
-              variant="text"
-              data-menu-action
-              role="button"
-              :tabindex="menuItem.disabled == true ? -1 : 0"
-              :title="$t(menuItem.label, menuItem.labelArgs || [])"
-              :disabled="menuItem.disabled == true"
-              :aria-disabled="menuItem.disabled == true ? 'true' : undefined"
-              :aria-haspopup="menuItem.subItems?.length ? 'menu' : undefined"
-              :prepend-icon="
-                typeof menuItem.icon === 'string' ? menuItem.icon : undefined
-              "
-              :color="menuItem.color"
-              border="bottom"
-              :append-icon="
-                menuItem.selected
-                  ? 'mdi-check'
-                  : menuItem.subItems?.length
-                    ? 'mdi-chevron-right'
-                    : undefined
-              "
-              style="padding-left: 25px"
-              @click.stop="(e) => menuItemClicked(e, menuItem)"
-              @keydown.enter.prevent.stop="
-                (e: KeyboardEvent) => menuItemClicked(e, menuItem)
-              "
-              @keydown.space.prevent.stop="
-                (e: KeyboardEvent) => menuItemClicked(e, menuItem)
-              "
-            >
-              <template
-                v-if="menuItem.icon && typeof menuItem.icon !== 'string'"
-                #prepend
-              >
-                <component :is="menuItem.icon" class="w-5 h-5" />
-              </template>
-            </v-list-item>
-          </div>
-        </v-list>
+        </v-card>
       </div>
-    </v-card>
-  </v-menu>
-  <!-- submenu -->
-  <v-menu
-    v-model="showSubmenu"
-    :target="[subMenuPosX, subMenuPosY]"
-    :scrim="TRANSPARENT_SCRIM"
-    attach=".v-application"
-    content-class="voiceover-options-menu"
-    :content-props="optionsMenuContentProps"
-    style="z-index: 999999"
-    z-index="999999"
-  >
-    <v-card min-width="260">
+      <!-- submenu -->
       <div
-        ref="subMenuContentRef"
-        class="options-menu-panel"
+        v-if="showSubmenu"
+        class="context-menu-shell voiceover-options-menu"
+        role="dialog"
         tabindex="-1"
-        @keydown.esc.stop.prevent="closeMenus"
+        :aria-label="$t('more_options')"
+        :style="subMenuPositionStyle"
+        @click.stop
       >
-        <v-list density="compact" slim tile role="presentation" tabindex="-1">
+        <v-card min-width="260">
           <div
-            v-for="subMenuItem of subMenuItems.filter((x) => !x.hide)"
-            :key="subMenuItem.label"
-            class="menurow"
-            :class="{ 'menu-item-error': subMenuItem.color === 'error' }"
-            role="none"
+            ref="subMenuContentRef"
+            class="options-menu-panel"
+            tabindex="-1"
+            @keydown.esc.stop.prevent="closeMenus"
           >
-            <v-list-item
-              tag="button"
-              type="button"
-              class="context-menu-button"
-              variant="text"
-              data-menu-action
-              role="button"
-              :tabindex="subMenuItem.disabled == true ? -1 : 0"
-              :title="$t(subMenuItem.label, subMenuItem.labelArgs || [])"
-              :disabled="subMenuItem.disabled == true"
-              :aria-disabled="subMenuItem.disabled == true ? 'true' : undefined"
-              :prepend-icon="
-                typeof subMenuItem.icon === 'string'
-                  ? subMenuItem.icon
-                  : undefined
-              "
-              :color="subMenuItem.color"
-              :append-icon="subMenuItem.selected ? 'mdi-check' : undefined"
-              @click.stop="(e) => menuItemClicked(e, subMenuItem)"
-              @keydown.enter.prevent.stop="
-                (e: KeyboardEvent) => menuItemClicked(e, subMenuItem)
-              "
-              @keydown.space.prevent.stop="
-                (e: KeyboardEvent) => menuItemClicked(e, subMenuItem)
-              "
+            <v-list
+              density="compact"
+              slim
+              tile
+              role="presentation"
+              tabindex="-1"
             >
-              <template
-                v-if="subMenuItem.icon && typeof subMenuItem.icon !== 'string'"
-                #prepend
+              <div
+                v-for="subMenuItem of subMenuItems.filter((x) => !x.hide)"
+                :key="subMenuItem.label"
+                class="menurow"
+                :class="{ 'menu-item-error': subMenuItem.color === 'error' }"
+                role="none"
               >
-                <component :is="subMenuItem.icon" class="w-5 h-5" />
-              </template>
-            </v-list-item>
+                <v-list-item
+                  tag="button"
+                  type="button"
+                  class="context-menu-button"
+                  variant="text"
+                  data-menu-action
+                  role="button"
+                  :tabindex="subMenuItem.disabled == true ? -1 : 0"
+                  :title="$t(subMenuItem.label, subMenuItem.labelArgs || [])"
+                  :disabled="subMenuItem.disabled == true"
+                  :aria-disabled="
+                    subMenuItem.disabled == true ? 'true' : undefined
+                  "
+                  :prepend-icon="
+                    typeof subMenuItem.icon === 'string'
+                      ? subMenuItem.icon
+                      : undefined
+                  "
+                  :color="subMenuItem.color"
+                  :append-icon="subMenuItem.selected ? 'mdi-check' : undefined"
+                  @click.stop="(e) => menuItemClicked(e, subMenuItem)"
+                  @keydown.enter.prevent.stop="
+                    (e: KeyboardEvent) => menuItemClicked(e, subMenuItem)
+                  "
+                  @keydown.space.prevent.stop="
+                    (e: KeyboardEvent) => menuItemClicked(e, subMenuItem)
+                  "
+                >
+                  <template
+                    v-if="
+                      subMenuItem.icon && typeof subMenuItem.icon !== 'string'
+                    "
+                    #prepend
+                  >
+                    <component :is="subMenuItem.icon" class="w-5 h-5" />
+                  </template>
+                </v-list-item>
+              </div>
+            </v-list>
           </div>
-        </v-list>
+        </v-card>
       </div>
-    </v-card>
-  </v-menu>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -187,7 +211,6 @@ import {
   ref,
   watch,
 } from "vue";
-import { useI18n } from "vue-i18n";
 
 const show = ref<boolean>(false);
 const items = ref<ContextMenuItem[]>([]);
@@ -202,13 +225,15 @@ const subMenuPosY = ref(0);
 const menuContentRef = ref<HTMLElement | null>(null);
 const subMenuContentRef = ref<HTMLElement | null>(null);
 const menuOpener = ref<HTMLElement | null>(null);
-const TRANSPARENT_SCRIM = "#00000000";
-const { t } = useI18n();
-const optionsMenuContentProps = computed(() => ({
-  role: "dialog",
-  "aria-modal": "true",
-  "aria-label": t("more_options"),
-}));
+const VIEWPORT_MARGIN = 8;
+const MENU_MAX_HEIGHT = 450;
+
+const menuPositionStyle = computed(() =>
+  getMenuPositionStyle(posX.value, posY.value, 300),
+);
+const subMenuPositionStyle = computed(() =>
+  getMenuPositionStyle(subMenuPosX.value, subMenuPosY.value, 260),
+);
 
 const focusableMenuItemSelector = [
   "button:not([disabled])",
@@ -280,22 +305,33 @@ function restoreMenuOpener() {
   }
 }
 
-function closeSubmenu() {
-  showSubmenu.value = false;
-  queueMenuFocus(() => menuContentRef.value);
+function getMenuPositionStyle(x: number, y: number, minWidth: number) {
+  if (typeof window === "undefined") {
+    return {
+      left: `${x}px`,
+      top: `${y}px`,
+    };
+  }
+
+  const left = Math.max(
+    VIEWPORT_MARGIN,
+    Math.min(x, window.innerWidth - minWidth - VIEWPORT_MARGIN),
+  );
+  const top = Math.max(
+    VIEWPORT_MARGIN,
+    Math.min(y, window.innerHeight - MENU_MAX_HEIGHT - VIEWPORT_MARGIN),
+  );
+
+  return {
+    left: `${left}px`,
+    top: `${top}px`,
+  };
 }
 
 function closeMenus() {
   showSubmenu.value = false;
   show.value = false;
   store.dialogActive = false;
-}
-
-function onMenuModelUpdate(open: boolean) {
-  store.dialogActive = open;
-  if (!open) {
-    showSubmenu.value = false;
-  }
 }
 
 watch(show, (open) => {
@@ -315,7 +351,9 @@ watch(showSubmenu, (open) => {
 });
 
 watch([show, showSubmenu], ([menuOpen, submenuOpen]) => {
-  store.contextMenuActive = menuOpen || submenuOpen;
+  const open = menuOpen || submenuOpen;
+  store.contextMenuActive = open;
+  store.dialogActive = open;
 });
 
 onMounted(() => {
@@ -1415,6 +1453,18 @@ const radioModeSupported = function (item: MediaItemTypeOrItemMapping) {
 <style scoped>
 :global(.voiceover-options-menu) {
   contain: none !important;
+}
+
+.context-menu-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  pointer-events: auto;
+}
+
+.context-menu-shell {
+  position: fixed;
+  outline: none;
 }
 
 .context-menu-button {
