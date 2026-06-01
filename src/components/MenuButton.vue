@@ -9,10 +9,10 @@
             height: 38px;
             margin-top: -1px;
             margin-left: -1px;
-          `"
+      `"
       :disabled="loading"
-      :title="menuButtonLabel"
-      :aria-label="menuButtonLabel"
+      :title="menuButtonLabel || $t('more_options')"
+      :aria-label="menuButtonLabel || $t('more_options')"
       aria-haspopup="menu"
       @click="emit('menu')"
     >

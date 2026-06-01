@@ -323,9 +323,21 @@ const canPlayPause = computed(() => {
   return false;
 });
 
-const accessiblePlayerName = computed(() =>
-  getPlayerName(compProps.player, 27),
-);
+const accessiblePlayerName = computed(() => {
+  const availableChildPlayerCount = compProps.player.group_members.filter(
+    (playerId) =>
+      api.players[playerId]?.available && playerId != compProps.player.player_id,
+  ).length;
+  if (
+    compProps.player.type != PlayerType.GROUP &&
+    availableChildPlayerCount > 0
+  ) {
+    return `${compProps.player.name}, ${availableChildPlayerCount} ${t(
+      "settings.group_members",
+    )}`;
+  }
+  return compProps.player.name;
+});
 
 const powerButtonLabel = computed(
   () => `${t("power_on_player")} ${accessiblePlayerName.value}`,
