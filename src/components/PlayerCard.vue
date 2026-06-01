@@ -326,7 +326,8 @@ const canPlayPause = computed(() => {
 const accessiblePlayerName = computed(() => {
   const availableChildPlayerCount = compProps.player.group_members.filter(
     (playerId) =>
-      api.players[playerId]?.available && playerId != compProps.player.player_id,
+      api.players[playerId]?.available &&
+      playerId != compProps.player.player_id,
   ).length;
   if (
     compProps.player.type != PlayerType.GROUP &&
