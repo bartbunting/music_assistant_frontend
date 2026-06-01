@@ -1519,7 +1519,21 @@ onMounted(() => {
   });
 });
 
-const onHeartBtnClick = async function (evt: PointerEvent | MouseEvent) {
+function getContextMenuPosition(evt: MouseEvent | KeyboardEvent) {
+  if ("clientX" in evt && "clientY" in evt && (evt.clientX || evt.clientY)) {
+    return { posX: evt.clientX, posY: evt.clientY };
+  }
+
+  const target = evt.currentTarget;
+  if (target instanceof HTMLElement) {
+    const rect = target.getBoundingClientRect();
+    return { posX: rect.right, posY: rect.top };
+  }
+
+  return { posX: 0, posY: 0 };
+}
+
+const onHeartBtnClick = async function (evt: MouseEvent | KeyboardEvent) {
   // the heart icon/button was clicked
   if (!store.curQueueItem?.media_item) return;
   if (!store.curQueueItem.media_item.favorite) {
@@ -1607,10 +1621,11 @@ const onHeartBtnClick = async function (evt: PointerEvent | MouseEvent) {
   }
 
   // open the contextmenu by emitting the event
+  const { posX, posY } = getContextMenuPosition(evt);
   eventbus.emit("contextmenu", {
     items: menuItems,
-    posX: evt.clientX,
-    posY: evt.clientY,
+    posX,
+    posY,
   });
 };
 
