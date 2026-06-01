@@ -716,7 +716,8 @@ const activeTab = computed(() => {
     name.includes("core") ||
     name.includes("serverlog") ||
     name === "backgroundtasks" ||
-    name === "genremanagement"
+    name === "genremanagement" ||
+    name === "audioanalysissettings"
   ) {
     return "system";
   }
@@ -930,6 +931,12 @@ const breadcrumbItems = computed(() => {
     .with("genremanagement", () => {
       items.push({
         title: t("settings.genre_management"),
+        disabled: true,
+      });
+    })
+    .with("audioanalysissettings", () => {
+      items.push({
+        title: t("settings.audio_analysis"),
         disabled: true,
       });
     })

@@ -401,6 +401,13 @@ import {
 } from "@/plugins/api/interfaces";
 import { authManager } from "@/plugins/auth";
 import { $t } from "@/plugins/i18n";
+import {
+  isShortcutMediaType,
+  isShortcutPinnedItem,
+  isShortcutCapReached,
+  pinShortcutStandalone,
+  unpinShortcutStandaloneItem,
+} from "@/composables/useShortcuts";
 
 import type { Component } from "vue";
 import GenreIcon from "@/components/icons/GenreIcon.vue";
@@ -498,9 +505,13 @@ export const showPlayMenuForMediaItem = async function (
   const firstItem = playableItems[0];
 
   let playMenuItems: ContextMenuItem[] = [];
+  const LiveSourceTypes = [MediaType.RADIO, MediaType.AUDIO_SOURCE];
+  const enqueueConfigKey = LiveSourceTypes.includes(firstItem.media_type)
+    ? "default_enqueue_option_live_sources"
+    : `default_enqueue_option_${firstItem.media_type}`;
   const defaultEnqueueOption = (await api.getCoreConfigValue(
     "player_queues",
-    `default_enqueue_option_${firstItem.media_type}`,
+    enqueueConfigKey,
   )) as QueueOption;
   // Start Radio
   if (radioModeSupported(firstItem)) {
@@ -730,12 +741,18 @@ export const getContextMenuItems = async function (
       label: "remove_library",
       labelArgs: [],
       action: () => {
-        if (!confirm($t("confirm_library_remove"))) return;
-        for (const item of items)
-          api.removeItemFromLibrary(item.media_type, item.item_id);
-        if (resolvedItem.item_id == parentItem?.item_id) router.go(-1);
-        // Clear the multi-select after action
-        eventbus.emit("clearSelection");
+        eventbus.emit("deleteConfirmationDialog", {
+          title: $t("remove_library"),
+          message: $t("confirm_library_remove"),
+          confirmLabel: $t("remove"),
+          onConfirm: () => {
+            for (const item of items)
+              api.removeItemFromLibrary(item.media_type, item.item_id);
+            if (resolvedItem.item_id == parentItem?.item_id) router.go(-1);
+            // Clear the multi-select after action
+            eventbus.emit("clearSelection");
+          },
+        });
       },
       icon: "mdi-bookshelf",
     });
@@ -1003,6 +1020,30 @@ export const getContextMenuItems = async function (
       icon: "mdi-export",
     });
   }
+  // pin / unpin shortcut in sidebar (playlist, artist, album, track, radio, podcast, audiobook, genre)
+  if (
+    items.length === 1 &&
+    isShortcutMediaType(items[0].media_type) &&
+    !!items[0].uri
+  ) {
+    const shortcutItem = items[0];
+    if (isShortcutPinnedItem(shortcutItem)) {
+      contextMenuItems.push({
+        label: "shortcut.remove_from",
+        labelArgs: [],
+        action: () => unpinShortcutStandaloneItem(shortcutItem),
+        icon: "mdi-pin-off-outline",
+      });
+    } else {
+      contextMenuItems.push({
+        label: "shortcut.add_to",
+        labelArgs: [],
+        action: () => pinShortcutStandalone(shortcutItem),
+        icon: "mdi-pin-outline",
+        disabled: isShortcutCapReached(),
+      });
+    }
+  }
   // map to main item (add provider mapping)
   if (
     items.length === 1 &&
@@ -1114,9 +1155,13 @@ export const getPlaybackContextMenuItems = async function (
   if (playableItems.length == 0) return playMenuItems;
   const firstItem = playableItems[0];
 
+  const LiveSourceTypes = [MediaType.RADIO, MediaType.AUDIO_SOURCE];
+  const enqueueConfigKey = LiveSourceTypes.includes(firstItem.media_type)
+    ? "default_enqueue_option_live_sources"
+    : `default_enqueue_option_${firstItem.media_type}`;
   const defaultEnqueueOption = (await api.getCoreConfigValue(
     "player_queues",
-    `default_enqueue_option_${firstItem.media_type}`,
+    enqueueConfigKey,
   )) as QueueOption;
 
   if (!store.activePlayer) return playMenuItems;

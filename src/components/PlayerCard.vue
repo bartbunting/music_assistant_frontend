@@ -168,11 +168,11 @@
             color="primary"
             :offset-x="-5"
             :offset-y="-5"
-            :content="
-              player.type == PlayerType.GROUP
-                ? player.group_members.length
-                : player.group_members.length || 1
+            :model-value="
+              player.type == PlayerType.GROUP ||
+              player.group_members.length >= 2
             "
+            :content="player.group_members.length"
             class="group-badge"
           >
             <Speaker
@@ -243,20 +243,16 @@
 </template>
 
 <script setup lang="ts">
-import {
-  imgCoverDark,
-  imgCoverLight,
-} from "@/components/QualityDetailsBtn.vue";
 import { Button } from "@/components/ui/button";
 import VolumeControl from "@/components/VolumeControl.vue";
 import { useActiveSource } from "@/composables/activeSource";
 import { getPlayerMenuItems } from "@/helpers/player_menu_items";
 import {
-  getColorPalette,
   getMediaImageUrl,
   getPlayerName,
   ImageColorPalette,
   isBuiltinPlayer,
+  paletteFromServer,
 } from "@/helpers/utils";
 import api from "@/plugins/api";
 import {
@@ -269,10 +265,9 @@ import {
 import { getBreakpointValue } from "@/plugins/breakpoint";
 import { eventbus } from "@/plugins/eventbus";
 import { store } from "@/plugins/store";
-import vuetify from "@/plugins/vuetify";
 import { webPlayer } from "@/plugins/web_player";
 import { MoreVertical, Pause, Play, Power, Speaker } from "lucide-vue-next";
-import { computed, ref, toRef, watch } from "vue";
+import { computed, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 
 // properties
@@ -343,7 +338,7 @@ const syncButtonLabel = computed(
 const playPauseButtonLabel = computed(() => {
   const action =
     compProps.player.playback_state == PlaybackState.PLAYING
-      ? "Pause"
+      ? t("pause")
       : t("play");
   return `${action} ${accessiblePlayerName.value}`;
 });
@@ -352,33 +347,9 @@ const menuButtonLabel = computed(
   () => `${t("more_options")} ${accessiblePlayerName.value}`,
 );
 
-// local refs
-const coverImageColorPalette = ref<ImageColorPalette>({
-  "0": "",
-  "1": "",
-  "2": "",
-  "3": "",
-  "4": "",
-  "5": "",
-  lightColor: "",
-  darkColor: "",
-});
-
-// utility feature to extract the dominant colors from the cover image
-// we use this color palette to colorize the playerbar/OSD
-const img = new Image();
-img.src = vuetify.theme.current.value.dark ? imgCoverDark : imgCoverLight;
-img.crossOrigin = "Anonymous";
-img.addEventListener("load", function () {
-  coverImageColorPalette.value = getColorPalette(img);
-});
-
-watch(
-  () => compProps.player.current_media?.image_url,
-  (newImageUrl) => {
-    img.src = getMediaImageUrl(newImageUrl) || "";
-  },
-  { immediate: true },
+// Use the server-derived palette from the now-playing media.
+const coverImageColorPalette = computed<ImageColorPalette>(() =>
+  paletteFromServer(compProps.player.current_media?.palette),
 );
 </script>
 
