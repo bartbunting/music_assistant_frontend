@@ -5,6 +5,7 @@ import { Minus } from "lucide-vue-next";
 import type { NumberFieldDecrementProps } from "reka-ui";
 import { NumberFieldDecrement, useForwardProps } from "reka-ui";
 import type { HTMLAttributes } from "vue";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<
   NumberFieldDecrementProps & { class?: HTMLAttributes["class"] }
@@ -13,14 +14,15 @@ const props = defineProps<
 const delegatedProps = reactiveOmit(props, "class");
 
 const forwarded = useForwardProps(delegatedProps);
+const { t } = useI18n();
 </script>
 
 <template>
   <NumberFieldDecrement
     data-slot="decrement"
     v-bind="forwarded"
-    aria-label="Decrease value"
-    title="Decrease value"
+    :aria-label="t('decrease_value')"
+    :title="t('decrease_value')"
     :class="
       cn(
         'absolute top-1/2 -translate-y-1/2 left-0 p-3 disabled:cursor-not-allowed disabled:opacity-20 w-10 h-full flex items-center justify-center',

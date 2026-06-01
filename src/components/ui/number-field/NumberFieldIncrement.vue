@@ -5,6 +5,7 @@ import { Plus } from "lucide-vue-next";
 import type { NumberFieldIncrementProps } from "reka-ui";
 import { NumberFieldIncrement, useForwardProps } from "reka-ui";
 import type { HTMLAttributes } from "vue";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<
   NumberFieldIncrementProps & { class?: HTMLAttributes["class"] }
@@ -13,14 +14,15 @@ const props = defineProps<
 const delegatedProps = reactiveOmit(props, "class");
 
 const forwarded = useForwardProps(delegatedProps);
+const { t } = useI18n();
 </script>
 
 <template>
   <NumberFieldIncrement
     data-slot="increment"
     v-bind="forwarded"
-    aria-label="Increase value"
-    title="Increase value"
+    :aria-label="t('increase_value')"
+    :title="t('increase_value')"
     :class="
       cn(
         'absolute top-1/2 -translate-y-1/2 right-0 disabled:cursor-not-allowed disabled:opacity-20 p-3 w-10 h-full flex items-center justify-center',

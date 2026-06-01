@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, type HTMLAttributes } from "vue";
 import { cn } from "@/lib/utils";
+import { useI18n } from "vue-i18n";
 import { useSidebar } from "./utils";
 
 const props = defineProps<{
@@ -8,10 +9,11 @@ const props = defineProps<{
 }>();
 
 const { toggleSidebar, state } = useSidebar();
+const { t } = useI18n();
 
 const isCollapsed = computed(() => state.value === "collapsed");
 const sidebarToggleLabel = computed(() =>
-  isCollapsed.value ? "Expand sidebar" : "Collapse sidebar",
+  isCollapsed.value ? t("expand_sidebar") : t("collapse_sidebar"),
 );
 </script>
 

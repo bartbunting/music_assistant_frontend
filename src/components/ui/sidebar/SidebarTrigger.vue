@@ -10,6 +10,7 @@ import {
 // import { store } from "@/plugins/store";
 import { PanelLeft } from "lucide-vue-next";
 import { computed, type HTMLAttributes } from "vue";
+import { useI18n } from "vue-i18n";
 import { useSidebar } from "./utils";
 
 const props = defineProps<{
@@ -17,10 +18,11 @@ const props = defineProps<{
 }>();
 
 const { toggleSidebar, state } = useSidebar();
+const { t } = useI18n();
 
 const isCollapsed = computed(() => state.value === "collapsed");
 const sidebarToggleLabel = computed(() =>
-  isCollapsed.value ? "Expand sidebar" : "Collapse sidebar",
+  isCollapsed.value ? t("expand_sidebar") : t("collapse_sidebar"),
 );
 
 // const showHaButton = computed(() => store.isIngressSession);
